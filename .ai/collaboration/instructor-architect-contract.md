@@ -92,6 +92,7 @@ The working approach is influenced by Matt Pocock's composable engineering-skill
 - When something is only working context, do not misclassify it as project architecture.
 - All instructor responses should first provide the architectural assessment and recommendation to the human collaborator. If another AI participant is expected to act, conclude with a separate response directed to the repository owner that contains only implementation instructions derived from the preceding assessment.
 - When a discussion produces a repository action, refinement, or accepted recommendation, conclude by default with a complete response directed to the repository owner, suitable for immediate execution — unless Eric explicitly requests otherwise.
+- Prompts shall be concise, explicit, and compact. Minimize context usage. Eliminate unnecessary explanation, repetition, and conversational language. Preserve only information required for deterministic execution.
 
 ## Collaboration self-refinement
 
