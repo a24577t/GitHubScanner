@@ -165,6 +165,21 @@ class Pagination(unittest.TestCase):
             self.assertEqual(observed["count"], 2)
 
 
+class AppendOnlyRawEvidence(unittest.TestCase):
+    def test_existing_run_id_rejected_without_touching_any_byte(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            with serve(HAPPY_SCRIPT) as (base, _):
+                self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            before = {p: p.read_bytes() for p in out.rglob("*") if p.is_file()}
+            with serve(HAPPY_SCRIPT) as (base, _):
+                result = collect(base, out, ["--run-id", RUN_ID])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(RUN_ID, result.stderr)
+            after = {p: p.read_bytes() for p in out.rglob("*") if p.is_file()}
+            self.assertEqual(before, after, "existing evidence must remain byte-identical")
+
+
 class Degradation(unittest.TestCase):
     def _report(self, script, tmp):
         with serve(script) as (base, _):

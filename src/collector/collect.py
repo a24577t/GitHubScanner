@@ -32,6 +32,12 @@ def _record(result, run_id, **extra):
 def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
     run_id = run_id or _generated_run_id()
     out_dir = Path(out_dir)
+    raw_dir = out_dir / "evidence" / "raw" / run_id
+    if raw_dir.exists():
+        raise RunFrameError(
+            f"raw evidence for run {run_id} already exists; "
+            "raw evidence is append-only and is never modified"
+        )
 
     identity = transport.get(api_url, "/user", token)
     if identity.status == 401:
@@ -47,7 +53,6 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
         api_url, f"/orgs/{org}/repos", token, max_pages=max_pages
     )
 
-    raw_dir = out_dir / "evidence" / "raw" / run_id
     write_canonical(raw_dir / "user.json", _record(identity, run_id))
     write_canonical(raw_dir / "meta.json", _record(meta, run_id, endpoint_optional=True))
     write_canonical(raw_dir / "org.json", _record(org_result, run_id))
