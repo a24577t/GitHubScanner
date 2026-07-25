@@ -34,3 +34,20 @@ def get(base_url, path, token):
         return FetchResult(
             url, err.code, dict(err.headers), err.read().decode("utf-8"), _now()
         )
+
+
+def _has_next(headers):
+    link = headers.get("Link", "")
+    return any('rel="next"' in part for part in link.split(","))
+
+
+def paginate(base_url, path, token, max_pages=100):
+    """Drain a Link-paginated listing; returns (pages, complete)."""
+    separator = "&" if "?" in path else "?"
+    pages = []
+    for number in range(1, max_pages + 1):
+        page = get(base_url, f"{path}{separator}per_page=100&page={number}", token)
+        pages.append(page)
+        if page.status < 200 or page.status >= 300 or not _has_next(page.headers):
+            return pages, True
+    return pages, False

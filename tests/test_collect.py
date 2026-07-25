@@ -59,5 +59,55 @@ class IdentityGate(unittest.TestCase):
             self.assertEqual(methods, {"GET"}, "observation-only: GET requests exclusively")
 
 
+HAPPY_SCRIPT = {
+    "/user": [USER_OK],
+    "/meta": [META_OK],
+    "/orgs/acme": [ORG_OK],
+    "/orgs/acme/repos": [response(200, [repo(2), repo(1)])],
+}
+
+RUN_ID = "20260724T000000Z"
+
+
+class SinglePageScaffold(unittest.TestCase):
+    def test_scaffold_layout_envelopes_observed_and_reports(self):
+        with serve(HAPPY_SCRIPT) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = collect(base, out, ["--run-id", RUN_ID])
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            raw = out / "evidence" / "raw" / RUN_ID
+            for name in ("user.json", "meta.json", "org.json", "repos.page-1.json"):
+                self.assertTrue((raw / name).exists(), f"missing raw/{name}")
+
+            envelope = json.loads((raw / "org.json").read_text(encoding="utf-8"))["envelope"]
+            for field in ("url", "method", "status", "captured_at", "run_id"):
+                self.assertIn(field, envelope)
+            self.assertEqual(envelope["method"], "GET")
+            self.assertEqual(envelope["status"], 200)
+
+            observed_org = json.loads((out / "observed" / "org.json").read_text(encoding="utf-8"))
+            self.assertEqual(observed_org["state"], "collected")
+            self.assertEqual(observed_org["org"]["login"], "acme")
+
+            observed_repos = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed_repos["state"], "collected")
+            self.assertEqual(observed_repos["count"], 2)
+            self.assertEqual(
+                [r["id"] for r in observed_repos["repositories"]], [1, 2],
+                "repositories sorted by stable identity",
+            )
+            self.assertEqual(
+                sorted(observed_repos["repositories"][0]),
+                ["archived", "created_at", "default_branch", "fork", "full_name",
+                 "id", "name", "visibility"],
+            )
+
+            self.assertTrue((out / "reports" / f"{RUN_ID}.json").exists())
+            self.assertTrue((out / "reports" / f"{RUN_ID}.md").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
