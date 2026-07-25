@@ -87,7 +87,8 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
         except (json.JSONDecodeError, TypeError):
             items = 0
         item_total += items
-        incomplete = (number == len(pages)) and not listing_complete
+        incomplete = ((number == len(pages)) and not listing_complete
+                      and 200 <= page.status < 300)
         write_canonical(
             raw_dir / f"repos.page-{number}.json",
             _record(page, run_id, page=number, item_count=items,

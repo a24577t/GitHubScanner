@@ -47,7 +47,9 @@ def state_of(record):
     if record["envelope"].get("incomplete"):
         return "incomplete"
     if 200 <= status < 300:
-        return "collected"
+        # A 2xx whose expected-JSON body does not parse is a failed collection,
+        # never a collected one; no values are derived from malformed evidence.
+        return "collected" if _body(record) is not None else "failed"
     if status in (401, 403):
         return "inaccessible"
     if status == 404:

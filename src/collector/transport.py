@@ -76,6 +76,8 @@ def paginate(base_url, path, token, max_pages=100):
     for number in range(1, max_pages + 1):
         page = get(base_url, f"{path}{separator}per_page=100&page={number}", token)
         pages.append(page)
-        if page.status < 200 or page.status >= 300 or not _has_next(page.headers):
+        if page.status < 200 or page.status >= 300:
+            return pages, False
+        if not _has_next(page.headers):
             return pages, True
     return pages, False

@@ -259,5 +259,59 @@ class Degradation(unittest.TestCase):
             self.assertEqual(report["rate_limit"]["occurrences"], 1)
 
 
+class MalformedResponses(unittest.TestCase):
+    def _run(self, script, tmp):
+        out = Path(tmp) / "out"
+        with serve(script) as (base, _):
+            result = collect(base, out, ["--run-id", RUN_ID])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(
+            (out / "reports" / f"{RUN_ID}.json").read_text(encoding="utf-8")
+        )
+        return out, report
+
+    def test_malformed_2xx_org_body_is_failed_and_derives_no_values(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [response(200, None)]
+        script["/orgs/acme"][0]["body"] = "{not-json"
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(report["resource_states"]["org"], "failed")
+            observed = json.loads(
+                (out / "observed" / "org.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertIsNone(observed["org"])
+
+    def test_malformed_2xx_listing_page_is_failed(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme/repos"] = [response(200, None)]
+        script["/orgs/acme/repos"][0]["body"] = "]broken["
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(report["resource_states"]["repositories"], "failed")
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertEqual(observed["count"], 0)
+
+    def test_non_2xx_later_page_preserves_earlier_pages_and_reports_incomplete(self):
+        script = paged_script([[repo(1)], [repo(2)], [repo(3)]])
+        script["/orgs/acme/repos"][1] = response(500, {"message": "boom"})
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            raw = out / "evidence" / "raw" / RUN_ID
+            self.assertTrue((raw / "repos.page-1.json").exists())
+            self.assertTrue((raw / "repos.page-2.json").exists())
+            self.assertEqual(report["listings"]["repositories"]["complete"], False)
+            self.assertEqual(report["resource_states"]["repositories"], "failed")
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertEqual([r["id"] for r in observed["repositories"]], [1])
+
+
 if __name__ == "__main__":
     unittest.main()
