@@ -43,6 +43,14 @@ def main(argv=None):
             )
         except RunFrameError as err:
             return frame_error(str(err))
+    if args.command == "derive":
+        from collector.derive import derive_observed
+
+        try:
+            derive_observed(args.out)
+        except (ValueError, FileNotFoundError) as err:
+            return frame_error(str(err))
+        return 0
     return 0
 
 
