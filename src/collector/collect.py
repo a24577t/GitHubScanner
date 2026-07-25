@@ -98,14 +98,15 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
     derive.derive_observed(out_dir, run_id=run_id)
 
     resource_states = {}
-    for name, resource in (("user", "user.json"), ("meta", "meta.json"),
-                           ("org", "org.json")):
+    for name, resource, expect in (("user", "user.json", None),
+                                   ("meta", "meta.json", None),
+                                   ("org", "org.json", "object")):
         record = json.loads((raw_dir / resource).read_text(encoding="utf-8"))
-        resource_states[name] = derive.state_of(record)
+        resource_states[name] = derive.state_of(record, expect=expect)
     listing_states = []
     for page_path in sorted(raw_dir.glob("repos.page-*.json")):
         record = json.loads(page_path.read_text(encoding="utf-8"))
-        listing_states.append(derive.state_of(record))
+        listing_states.append(derive.state_of(record, expect="object_array"))
     resource_states["repositories"] = next(
         (s for s in listing_states if s != "collected"), "collected"
     ) if listing_states else "unknown"

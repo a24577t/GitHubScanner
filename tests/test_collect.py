@@ -296,6 +296,44 @@ class MalformedResponses(unittest.TestCase):
             self.assertEqual(observed["state"], "failed")
             self.assertEqual(observed["count"], 0)
 
+    def test_2xx_org_with_valid_non_object_json_is_failed(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [response(200, [1, 2, 3])]
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(report["resource_states"]["org"], "failed")
+            observed = json.loads(
+                (out / "observed" / "org.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertIsNone(observed["org"])
+            raw = out / "evidence" / "raw" / RUN_ID / "org.json"
+            self.assertIn("[1, 2, 3]", raw.read_text(encoding="utf-8"))
+
+    def test_2xx_listing_page_with_valid_non_array_json_is_failed(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme/repos"] = [response(200, {"message": "unexpected"})]
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(report["resource_states"]["repositories"], "failed")
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertEqual(observed["count"], 0)
+
+    def test_non_object_array_entries_never_become_repository_entities(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme/repos"] = [response(200, [repo(1), 123, "str"])]
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(report["resource_states"]["repositories"], "failed")
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["state"], "failed")
+            self.assertEqual(observed["repositories"], [])
+
     def test_non_2xx_later_page_preserves_earlier_pages_and_reports_incomplete(self):
         script = paged_script([[repo(1)], [repo(2)]])
         # page 2 fails persistently (survives the bounded retry policy)

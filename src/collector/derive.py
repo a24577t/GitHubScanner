@@ -39,7 +39,17 @@ def _pick(mapping, fields):
     return {field: mapping.get(field) for field in fields}
 
 
-def state_of(record):
+def _shape_ok(body, expect):
+    if body is None:
+        return False
+    if expect == "object":
+        return isinstance(body, dict)
+    if expect == "object_array":
+        return isinstance(body, list) and all(isinstance(item, dict) for item in body)
+    return True
+
+
+def state_of(record, expect=None):
     """Classify a raw record per the ADR-0002 taxonomy."""
     if record is None:
         return "unknown"
@@ -47,9 +57,9 @@ def state_of(record):
     if record["envelope"].get("incomplete"):
         return "incomplete"
     if 200 <= status < 300:
-        # A 2xx whose expected-JSON body does not parse is a failed collection,
-        # never a collected one; no values are derived from malformed evidence.
-        return "collected" if _body(record) is not None else "failed"
+        # A 2xx whose body is not the expected JSON shape is a failed
+        # collection, never a collected one; no values are derived from it.
+        return "collected" if _shape_ok(_body(record), expect) else "failed"
     if status in (401, 403):
         return "inaccessible"
     if status == 404:
@@ -73,7 +83,7 @@ def derive_observed(out_dir, run_id=None):
     raw_dir = out_dir / "evidence" / "raw" / run_id
 
     org_record = _load(raw_dir, "org.json")
-    org_state = state_of(org_record)
+    org_state = state_of(org_record, expect="object")
     org_value = _pick(_body(org_record), ORG_FIELDS) if org_state == "collected" else None
     write_canonical(
         out_dir / "observed" / "org.json",
@@ -85,11 +95,14 @@ def derive_observed(out_dir, run_id=None):
     repos, listing_state = [], "unknown"
     for page_path in pages:
         record = json.loads(page_path.read_text(encoding="utf-8"))
-        page_state = state_of(record)
+        page_state = state_of(record, expect="object_array")
         if listing_state in ("unknown", "collected"):
             listing_state = page_state
         body = _body(record)
-        if isinstance(body, list):
+        status = record["envelope"]["status"]
+        if 200 <= status < 300 and _shape_ok(body, "object_array"):
+            # collected and incomplete pages both carry valid partial evidence;
+            # shape-invalid pages contribute nothing.
             repos.extend(_pick(item, REPO_FIELDS) for item in body)
     repos.sort(key=lambda item: (item["id"] is None, item["id"]))
     write_canonical(
