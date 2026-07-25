@@ -297,8 +297,10 @@ class MalformedResponses(unittest.TestCase):
             self.assertEqual(observed["count"], 0)
 
     def test_non_2xx_later_page_preserves_earlier_pages_and_reports_incomplete(self):
-        script = paged_script([[repo(1)], [repo(2)], [repo(3)]])
+        script = paged_script([[repo(1)], [repo(2)]])
+        # page 2 fails persistently (survives the bounded retry policy)
         script["/orgs/acme/repos"][1] = response(500, {"message": "boom"})
+        script["/orgs/acme/repos"].append(response(500, {"message": "boom"}))
         with tempfile.TemporaryDirectory() as tmp:
             out, report = self._run(script, tmp)
             raw = out / "evidence" / "raw" / RUN_ID
