@@ -24,7 +24,7 @@ collector derive --out <dir>
 
 ## Runtime
 
-Python 3.12+, standard library only; no package installation, no virtual environment. Modules separate transport (HTTP), collection, serialization, and persistence. Files ≤300 physical lines per the repository file-size rule.
+Python 3.12+, standard library only; no package installation, no virtual environment. Transport (HTTP), collection, serialization, and persistence remain separable concerns; no fixed module count or file layout is mandated — the implementation stays as small as the contract allows. The repository file-size rule (300 physical lines, CLAUDE.md) applies as a review boundary with its documented exception process; do not force artificial splits to satisfy it.
 
 ## Collection behavior
 
