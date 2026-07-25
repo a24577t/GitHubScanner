@@ -8,7 +8,9 @@ class FetchResult:
     def __init__(self, url, status, headers, body_text, captured_at):
         self.url = url
         self.status = status
-        self.headers = headers
+        # HTTP header names are case-insensitive; normalize once so every
+        # consumer (retry logic, pagination, evidence) reads lowercase keys.
+        self.headers = {name.lower(): value for name, value in headers.items()}
         self.body_text = body_text
         self.captured_at = captured_at
         self.waits = []
@@ -42,7 +44,7 @@ def _rate_limited(result):
     if result.status == 429:
         return True
     return (result.status == 403
-            and (result.headers.get("Retry-After")
+            and (result.headers.get("retry-after")
                  or result.headers.get("x-ratelimit-remaining") == "0"))
 
 
@@ -59,13 +61,13 @@ def get(base_url, path, token):
         if not retryable or attempts >= MAX_ATTEMPTS:
             result.waits, result.attempts = waits, attempts
             return result
-        wait = min(int(result.headers.get("Retry-After", "1") or "1"), MAX_WAIT_SECONDS)
+        wait = min(int(result.headers.get("retry-after", "1") or "1"), MAX_WAIT_SECONDS)
         waits.append(wait)
         time.sleep(wait)
 
 
 def _has_next(headers):
-    link = headers.get("Link", "")
+    link = headers.get("link", "")
     return any('rel="next"' in part for part in link.split(","))
 
 

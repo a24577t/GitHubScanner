@@ -247,6 +247,18 @@ class Degradation(unittest.TestCase):
             report = self._report(script, tmp)
             self.assertEqual(report["resource_states"]["org"], "absent")
 
+    def test_403_with_mixed_case_ratelimit_header_retries_and_records_wait(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [
+            response(403, {"message": "API rate limit exceeded"},
+                     {"X-RateLimit-Remaining": "0"}),
+            ORG_OK,
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            report = self._report(script, tmp)
+            self.assertEqual(report["resource_states"]["org"], "collected")
+            self.assertEqual(report["rate_limit"]["occurrences"], 1)
+
     def test_rate_limit_retry_is_recorded(self):
         script = dict(HAPPY_SCRIPT)
         script["/orgs/acme"] = [
