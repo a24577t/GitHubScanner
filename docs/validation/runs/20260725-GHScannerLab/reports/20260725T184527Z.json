@@ -1,0 +1,33 @@
+{
+  "api_url": "https://api.github.com",
+  "failures": [],
+  "identity_login": "a24577t",
+  "listings": {
+    "repositories": {
+      "complete": true,
+      "items": 3,
+      "pages": 1
+    }
+  },
+  "org": "GHScannerLab",
+  "rate_limit": {
+    "occurrences": 0,
+    "waits_seconds": []
+  },
+  "resource_states": {
+    "meta": "collected",
+    "org": "collected",
+    "repositories": "collected",
+    "user": "collected"
+  },
+  "run_id": "20260725T184527Z",
+  "state_counts": {
+    "absent": 0,
+    "collected": 4,
+    "failed": 0,
+    "inaccessible": 0,
+    "incomplete": 0,
+    "unknown": 0,
+    "unsupported": 0
+  }
+}
