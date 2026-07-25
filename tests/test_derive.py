@@ -54,6 +54,48 @@ class TokenSecrecy(unittest.TestCase):
             self.assertNotIn(TOKEN, result.stderr)
 
 
+class LatestRunSelection(unittest.TestCase):
+    def test_derive_selects_actual_latest_run_despite_run_id_ordering(self):
+        import time
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            with serve(HAPPY_SCRIPT) as (base, _):
+                self.assertEqual(
+                    collect(base, out, ["--run-id", "zzz-first-run"]).returncode, 0)
+            time.sleep(1.1)
+            with serve(HAPPY_SCRIPT) as (base, _):
+                self.assertEqual(
+                    collect(base, out, ["--run-id", "aaa-second-run"]).returncode, 0)
+            shutil.rmtree(out / "observed")
+            result = run_cli(["derive", "--out", str(out)])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            observed = (out / "observed" / "org.json").read_text(encoding="utf-8")
+            import json
+
+            self.assertEqual(json.loads(observed)["run_id"], "aaa-second-run")
+
+
+class MarkdownReportContent(unittest.TestCase):
+    def test_markdown_report_carries_target_and_failures(self):
+        from fake_github import response as make_response
+        from test_collect import RUN_ID as run_id
+
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [make_response(200, None)]
+        script["/orgs/acme"][0]["body"] = "{not-json"
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            with serve(script) as (base, _):
+                self.assertEqual(collect(base, out, ["--run-id", run_id]).returncode, 0)
+            markdown = (out / "reports" / f"{run_id}.md").read_text(encoding="utf-8")
+            self.assertIn("**API base:**", markdown)
+            self.assertIn("**Target host:** 127.0.0.1", markdown)
+            self.assertIn("## Failures", markdown)
+            self.assertIn("/orgs/acme", markdown)
+            self.assertIn("200", markdown)
+
+
 class ReportCounts(unittest.TestCase):
     def test_report_counts_every_state_present(self):
         script = dict(HAPPY_SCRIPT)

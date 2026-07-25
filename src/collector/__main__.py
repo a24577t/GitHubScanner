@@ -9,6 +9,16 @@ def frame_error(message):
     return 2
 
 
+def _loopback_http_allowed(api_url):
+    """The HTTP exception is test-only: opt-in AND loopback target, never production."""
+    import urllib.parse
+
+    if os.environ.get("COLLECTOR_INSECURE_ALLOW_HTTP") != "1":
+        return False
+    host = urllib.parse.urlsplit(api_url).hostname
+    return host in ("127.0.0.1", "localhost", "::1")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="collector")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -28,8 +38,7 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     if args.command == "collect":
-        allow_http = os.environ.get("COLLECTOR_INSECURE_ALLOW_HTTP") == "1"
-        if not args.api_url.startswith("https://") and not allow_http:
+        if not args.api_url.startswith("https://") and not _loopback_http_allowed(args.api_url):
             return frame_error("--api-url must be an https:// URL (ADR-0003)")
         token = os.environ.get("GITHUB_TOKEN")
         if not token:

@@ -28,10 +28,14 @@ def build_report(api_url, org, run_id, identity_login, summary):
 
 
 def render_markdown(report):
+    import urllib.parse
+
+    host = urllib.parse.urlsplit(report["api_url"]).hostname
     lines = [
         f"# Collection report {report['run_id']}",
         "",
-        f"- **Target:** {report['api_url']}",
+        f"- **API base:** {report['api_url']}",
+        f"- **Target host:** {host}",
         f"- **Organization:** {report['org']}",
         f"- **Authenticated identity:** {report['identity_login']}",
         "",
@@ -53,6 +57,13 @@ def render_markdown(report):
             f"| {name} | {listing['pages']} | {listing['items']} "
             f"| {str(listing['complete']).lower()} |"
         )
+    lines += ["", "## Failures", ""]
+    if report["failures"]:
+        lines += ["| Resource | Status | URL |", "| --- | --- | --- |"]
+        lines += [f"| {f['resource']} | {f['status']} | {f['url']} |"
+                  for f in report["failures"]]
+    else:
+        lines.append("None.")
     rate = report["rate_limit"]
     lines += ["", f"Rate-limit waits: {rate['occurrences']} "
                   f"(total {sum(rate['waits_seconds'])}s)", ""]

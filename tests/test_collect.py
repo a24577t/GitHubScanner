@@ -102,11 +102,30 @@ class SinglePageScaffold(unittest.TestCase):
             self.assertEqual(
                 sorted(observed_repos["repositories"][0]),
                 ["archived", "created_at", "default_branch", "fork", "full_name",
-                 "id", "name", "visibility"],
+                 "id", "name", "state", "visibility"],
             )
+            self.assertEqual(observed_repos["repositories"][0]["state"], "collected")
 
             self.assertTrue((out / "reports" / f"{RUN_ID}.json").exists())
             self.assertTrue((out / "reports" / f"{RUN_ID}.md").exists())
+
+
+class UndeterminedValues(unittest.TestCase):
+    def test_missing_entity_fields_are_unknown_never_null(self):
+        script = dict(HAPPY_SCRIPT)
+        partial = {"id": 5, "name": "repo-5", "full_name": "acme/repo-5"}
+        script["/orgs/acme/repos"] = [response(200, [partial])]
+        with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            entity = observed["repositories"][0]
+            for field in ("visibility", "fork", "archived", "created_at",
+                          "default_branch"):
+                self.assertEqual(entity[field], "unknown", field)
+            self.assertNotIn(None, entity.values())
 
 
 def paged_script(pages):

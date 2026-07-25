@@ -12,11 +12,18 @@ REPO_FIELDS = (
 
 
 def latest_run_id(out_dir):
+    """The actual latest collected run: by envelope captured_at, then run-id."""
     raw_root = Path(out_dir) / "evidence" / "raw"
-    runs = sorted(p.name for p in raw_root.iterdir() if p.is_dir())
+    runs = [p for p in raw_root.iterdir() if p.is_dir()]
     if not runs:
         raise ValueError("no raw evidence runs found under " + str(raw_root))
-    return runs[-1]
+
+    def collected_at(run_dir):
+        record = _load(run_dir, "user.json")
+        captured = record["envelope"]["captured_at"] if record else ""
+        return (captured, run_dir.name)
+
+    return max(runs, key=collected_at).name
 
 
 def _load(raw_dir, name):
@@ -34,9 +41,13 @@ def _body(record):
 
 
 def _pick(mapping, fields):
+    """Project entity fields; undetermined values are 'unknown', never null."""
     if not isinstance(mapping, dict):
-        return {field: None for field in fields}
-    return {field: mapping.get(field) for field in fields}
+        mapping = {}
+    return {
+        field: mapping[field] if mapping.get(field) is not None else "unknown"
+        for field in fields
+    }
 
 
 # Response bodies that affirmatively signal "not configured" (never mere "Not Found").
@@ -150,8 +161,11 @@ def derive_observed(out_dir, run_id=None):
         if 200 <= status < 300 and _shape_ok(body, "object_array"):
             # collected and incomplete pages both carry valid partial evidence;
             # shape-invalid pages contribute nothing.
-            repos.extend(_pick(item, REPO_FIELDS) for item in body)
-    repos.sort(key=lambda item: (item["id"] is None, item["id"]))
+            repos.extend(
+                {**_pick(item, REPO_FIELDS), "state": "collected"} for item in body
+            )
+    repos.sort(key=lambda item: (not isinstance(item["id"], int), str(item["id"])
+                                 if not isinstance(item["id"], int) else item["id"]))
     write_canonical(
         out_dir / "observed" / "repositories.json",
         {"count": len(repos), "repositories": repos,

@@ -47,6 +47,27 @@ class RunFrameEstablishment(unittest.TestCase):
             env=env,
         )
 
+    def test_http_override_never_applies_to_non_loopback_targets(self):
+        result = run_cli(
+            ["collect", "--api-url", "http://internal.example", "--org", "acme",
+             "--out", "o"],
+            env={"GITHUB_TOKEN": "tok-frame-2", "COLLECTOR_INSECURE_ALLOW_HTTP": "1"},
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("https", result.stderr.lower())
+
+    def test_unestablished_identity_status_fails_run_frame(self):
+        for status in (403, 500):
+            with self.subTest(status=status):
+                script = {"/user": [response(status, {"message": "no identity"}),
+                                    response(status, {"message": "no identity"})]}
+                with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+                    out = Path(tmp) / "out"
+                    result = self._collect(base, out)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn("identity", result.stderr.lower())
+                    self.assertFalse(out.exists())
+
     def test_malformed_identity_response_fails_run_frame(self):
         script = {"/user": [response(200, None)]}
         script["/user"][0]["body"] = "{not-json"

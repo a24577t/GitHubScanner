@@ -78,16 +78,18 @@ def _establish_identity(api_url, token):
         raise RunFrameError(f"target unreachable: {identity.body_text}")
     if identity.status == 401:
         raise RunFrameError("authentication rejected by target (401 on /user)")
-    login = None
-    if 200 <= identity.status < 300:
-        try:
-            login = json.loads(identity.body_text).get("login")
-        except (json.JSONDecodeError, AttributeError):
-            login = None
-        if login is None:
-            raise RunFrameError(
-                "identity response unparseable (2xx on /user without a login)"
-            )
+    if not 200 <= identity.status < 300:
+        raise RunFrameError(
+            f"identity not established ({identity.status} on /user)"
+        )
+    try:
+        login = json.loads(identity.body_text).get("login")
+    except (json.JSONDecodeError, AttributeError):
+        login = None
+    if login is None:
+        raise RunFrameError(
+            "identity response unparseable (2xx on /user without a login)"
+        )
     return identity, login
 
 
