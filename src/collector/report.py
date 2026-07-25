@@ -1,5 +1,5 @@
 """Append-only collection reports: JSON for machines, Markdown for humans."""
-from collector.serialize import canonical_dumps, write_canonical, write_text
+from collector.serialize import write_canonical, write_text
 
 ALL_STATES = (
     "collected", "absent", "inaccessible", "unsupported",

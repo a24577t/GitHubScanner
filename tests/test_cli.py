@@ -1,6 +1,9 @@
 """CLI seam: argument handling and run-frame validation."""
+import tempfile
 import unittest
+from pathlib import Path
 
+from fake_github import response, serve
 from helpers import run_cli
 
 
@@ -17,9 +20,6 @@ class RunFrameValidation(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
 
     def test_non_https_api_url_rejected_no_scaffold(self):
-        import tempfile
-        from pathlib import Path
-
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
             result = run_cli(
@@ -31,8 +31,6 @@ class RunFrameValidation(unittest.TestCase):
             self.assertFalse(out.exists(), "frame failure must not produce a scaffold")
 
     def test_missing_token_rejected(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
             result = run_cli(
                 ["collect", "--api-url", "https://api.example", "--org", "x", "--out", tmp]
@@ -42,7 +40,7 @@ class RunFrameValidation(unittest.TestCase):
 
 
 class RunFrameEstablishment(unittest.TestCase):
-    def _collect(self, base, out, recorder_env=None):
+    def _collect(self, base, out):
         env = {"GITHUB_TOKEN": "tok-frame-2", "COLLECTOR_INSECURE_ALLOW_HTTP": "1"}
         return run_cli(
             ["collect", "--api-url", base, "--org", "acme", "--out", str(out)],
@@ -50,11 +48,6 @@ class RunFrameEstablishment(unittest.TestCase):
         )
 
     def test_malformed_identity_response_fails_run_frame(self):
-        import tempfile
-        from pathlib import Path
-
-        from fake_github import response, serve
-
         script = {"/user": [response(200, None)]}
         script["/user"][0]["body"] = "{not-json"
         with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
@@ -65,11 +58,6 @@ class RunFrameEstablishment(unittest.TestCase):
             self.assertFalse(out.exists())
 
     def test_unwritable_out_fails_before_any_request(self):
-        import tempfile
-        from pathlib import Path
-
-        from fake_github import serve
-
         with serve({}) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             blocker = Path(tmp) / "blocked"
             blocker.write_text("a file where the out dir should go", encoding="utf-8")
@@ -79,9 +67,6 @@ class RunFrameEstablishment(unittest.TestCase):
             self.assertEqual(recorder.requests, [], "no request before writability check")
 
     def test_unreachable_target_fails_run_frame_with_diagnostic(self):
-        import tempfile
-        from pathlib import Path
-
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
             result = self._collect("http://127.0.0.1:9", out)
