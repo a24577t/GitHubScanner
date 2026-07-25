@@ -78,11 +78,9 @@ class LatestRunSelection(unittest.TestCase):
 
 class MarkdownReportContent(unittest.TestCase):
     def test_markdown_report_carries_target_and_failures(self):
-        from fake_github import response as make_response
-        from test_collect import RUN_ID as run_id
-
+        run_id = RUN_ID
         script = dict(HAPPY_SCRIPT)
-        script["/orgs/acme"] = [make_response(200, None)]
+        script["/orgs/acme"] = [response(200, None)]
         script["/orgs/acme"][0]["body"] = "{not-json"
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
