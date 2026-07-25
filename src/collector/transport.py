@@ -19,9 +19,11 @@ def _now():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def get(base_url, path, token):
-    """Perform a single authenticated GET; HTTP errors are results, not exceptions."""
-    url = base_url.rstrip("/") + path
+MAX_ATTEMPTS = 3
+MAX_WAIT_SECONDS = 60
+
+
+def _fetch_once(url, token):
     request = urllib.request.Request(url, method="GET")
     request.add_header("Authorization", "Bearer " + token)
     request.add_header("Accept", "application/vnd.github+json")
@@ -34,6 +36,32 @@ def get(base_url, path, token):
         return FetchResult(
             url, err.code, dict(err.headers), err.read().decode("utf-8"), _now()
         )
+
+
+def _rate_limited(result):
+    if result.status == 429:
+        return True
+    return (result.status == 403
+            and (result.headers.get("Retry-After")
+                 or result.headers.get("x-ratelimit-remaining") == "0"))
+
+
+def get(base_url, path, token):
+    """Authenticated GET with bounded, recorded retries on rate limits and 5xx."""
+    import time
+
+    url = base_url.rstrip("/") + path
+    waits, attempts = [], 0
+    while True:
+        attempts += 1
+        result = _fetch_once(url, token)
+        retryable = _rate_limited(result) or result.status >= 500
+        if not retryable or attempts >= MAX_ATTEMPTS:
+            result.waits, result.attempts = waits, attempts
+            return result
+        wait = min(int(result.headers.get("Retry-After", "1") or "1"), MAX_WAIT_SECONDS)
+        waits.append(wait)
+        time.sleep(wait)
 
 
 def _has_next(headers):
