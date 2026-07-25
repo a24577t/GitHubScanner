@@ -39,6 +39,14 @@ def _pick(mapping, fields):
     return {field: mapping.get(field) for field in fields}
 
 
+# Response bodies that affirmatively signal "not configured" (never mere "Not Found").
+ABSENCE_MESSAGES = frozenset({"Branch not protected"})
+
+RESOURCES = (("user", "user.json", "object"),
+             ("meta", "meta.json", "object"),
+             ("org", "org.json", "object"))
+
+
 def _shape_ok(body, expect):
     if body is None:
         return False
@@ -73,8 +81,47 @@ def state_of(record, expect=None):
     return "failed"
 
 
-# Response bodies that affirmatively signal "not configured" (never mere "Not Found").
-ABSENCE_MESSAGES = frozenset({"Branch not protected"})
+def run_summary(out_dir, run_id):
+    """Aggregate a run's states, failures, listing facts, and waits — from raw only."""
+    raw_dir = Path(out_dir) / "evidence" / "raw" / run_id
+    resource_states, failures, waits = {}, [], []
+
+    def note(name, record, state):
+        resource_states[name] = state
+        envelope = record["envelope"]
+        waits.extend(envelope.get("waits_seconds", []))
+        if state == "failed":
+            failures.append({"resource": name, "status": envelope["status"],
+                             "url": envelope["url"]})
+
+    for name, filename, expect in RESOURCES:
+        record = _load(raw_dir, filename)
+        if record is None:
+            resource_states[name] = "unknown"
+            continue
+        note(name, record, state_of(record, expect=expect))
+
+    pages = sorted(raw_dir.glob("repos.page-*.json"),
+                   key=lambda p: int(p.stem.split("-")[-1]))
+    page_states, items = [], 0
+    for number, page_path in enumerate(pages, start=1):
+        record = json.loads(page_path.read_text(encoding="utf-8"))
+        state = state_of(record, expect="object_array")
+        note(f"repositories.page-{number}", record, state)
+        del resource_states[f"repositories.page-{number}"]
+        page_states.append(state)
+        items += record["envelope"].get("item_count", 0)
+    resource_states["repositories"] = next(
+        (s for s in page_states if s != "collected"), "collected"
+    ) if page_states else "unknown"
+    complete = bool(page_states) and all(s == "collected" for s in page_states)
+    return {
+        "resource_states": resource_states,
+        "failures": failures,
+        "listings": {"repositories": {"pages": len(pages), "items": items,
+                                      "complete": complete}},
+        "waits": waits,
+    }
 
 
 def derive_observed(out_dir, run_id=None):

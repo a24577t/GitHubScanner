@@ -8,10 +8,7 @@ def canonical_dumps(obj):
 
 
 def write_canonical(path, obj):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(canonical_dumps(obj))
+    write_text(path, canonical_dumps(obj))
 
 
 def write_text(path, text):

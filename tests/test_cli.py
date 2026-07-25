@@ -41,5 +41,54 @@ class RunFrameValidation(unittest.TestCase):
             self.assertIn("GITHUB_TOKEN", result.stderr)
 
 
+class RunFrameEstablishment(unittest.TestCase):
+    def _collect(self, base, out, recorder_env=None):
+        env = {"GITHUB_TOKEN": "tok-frame-2", "COLLECTOR_INSECURE_ALLOW_HTTP": "1"}
+        return run_cli(
+            ["collect", "--api-url", base, "--org", "acme", "--out", str(out)],
+            env=env,
+        )
+
+    def test_malformed_identity_response_fails_run_frame(self):
+        import tempfile
+        from pathlib import Path
+
+        from fake_github import response, serve
+
+        script = {"/user": [response(200, None)]}
+        script["/user"][0]["body"] = "{not-json"
+        with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = self._collect(base, out)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("identity", result.stderr.lower())
+            self.assertFalse(out.exists())
+
+    def test_unwritable_out_fails_before_any_request(self):
+        import tempfile
+        from pathlib import Path
+
+        from fake_github import serve
+
+        with serve({}) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
+            blocker = Path(tmp) / "blocked"
+            blocker.write_text("a file where the out dir should go", encoding="utf-8")
+            result = self._collect(base, blocker / "out")
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("output", result.stderr.lower())
+            self.assertEqual(recorder.requests, [], "no request before writability check")
+
+    def test_unreachable_target_fails_run_frame_with_diagnostic(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = self._collect("http://127.0.0.1:9", out)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("unreachable", result.stderr.lower())
+            self.assertFalse(out.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

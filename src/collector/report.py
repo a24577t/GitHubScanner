@@ -7,21 +7,21 @@ ALL_STATES = (
 )
 
 
-def build_report(api_url, org, run_id, identity_login, resource_states, listings,
-                 rate_limit_waits):
+def build_report(api_url, org, run_id, identity_login, summary):
     counts = {state: 0 for state in ALL_STATES}
-    for state in resource_states.values():
+    for state in summary["resource_states"].values():
         counts[state] += 1
     return {
         "api_url": api_url,
+        "failures": summary["failures"],
         "identity_login": identity_login,
-        "listings": listings,
+        "listings": summary["listings"],
         "org": org,
         "rate_limit": {
-            "occurrences": len(rate_limit_waits),
-            "waits_seconds": rate_limit_waits,
+            "occurrences": len(summary["waits"]),
+            "waits_seconds": summary["waits"],
         },
-        "resource_states": resource_states,
+        "resource_states": summary["resource_states"],
         "run_id": run_id,
         "state_counts": counts,
     }

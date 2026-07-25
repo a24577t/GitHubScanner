@@ -26,14 +26,6 @@ HEADER_ALLOWLIST = frozenset({
 })
 
 
-def _evidence_headers(headers):
-    return {
-        name.lower(): value
-        for name, value in headers.items()
-        if name.lower() in HEADER_ALLOWLIST
-    }
-
-
 def _generated_run_id():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
@@ -42,8 +34,11 @@ def _record(result, run_id, **extra):
     envelope = {
         "captured_at": result.captured_at,
         "method": "GET",
+        "response_headers": {
+            name: value for name, value in result.headers.items()
+            if name in HEADER_ALLOWLIST
+        },
         "run_id": run_id,
-        "response_headers": _evidence_headers(result.headers),
         "status": result.status,
         "url": result.url,
         "attempts": result.attempts,
@@ -51,6 +46,49 @@ def _record(result, run_id, **extra):
     }
     envelope.update(extra)
     return {"envelope": envelope, "body_text": result.body_text}
+
+
+def _prepare_out_dir(out_dir):
+    """Verify writability before any request; return dirs created for rollback."""
+    created, probe_parent = [], out_dir
+    while not probe_parent.exists():
+        created.append(probe_parent)
+        probe_parent = probe_parent.parent
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        probe = out_dir / ".write-probe"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink()
+    except OSError as err:
+        raise RunFrameError(f"output directory is not writable: {err}")
+    return created
+
+
+def _rollback(created_dirs):
+    for path in created_dirs:
+        try:
+            path.rmdir()
+        except OSError:
+            pass
+
+
+def _establish_identity(api_url, token):
+    identity = transport.get(api_url, "/user", token)
+    if identity.status == 0:
+        raise RunFrameError(f"target unreachable: {identity.body_text}")
+    if identity.status == 401:
+        raise RunFrameError("authentication rejected by target (401 on /user)")
+    login = None
+    if 200 <= identity.status < 300:
+        try:
+            login = json.loads(identity.body_text).get("login")
+        except (json.JSONDecodeError, AttributeError):
+            login = None
+        if login is None:
+            raise RunFrameError(
+                "identity response unparseable (2xx on /user without a login)"
+            )
+    return identity, login
 
 
 def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
@@ -62,14 +100,12 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
             f"raw evidence for run {run_id} already exists; "
             "raw evidence is append-only and is never modified"
         )
-
-    identity = transport.get(api_url, "/user", token)
-    if identity.status == 401:
-        raise RunFrameError("authentication rejected by target (401 on /user)")
+    created_dirs = _prepare_out_dir(out_dir)
     try:
-        identity_login = json.loads(identity.body_text).get("login")
-    except (json.JSONDecodeError, AttributeError):
-        identity_login = None
+        identity, identity_login = _establish_identity(api_url, token)
+    except RunFrameError:
+        _rollback(created_dirs)
+        raise
 
     meta = transport.get(api_url, "/meta", token)
     org_result = transport.get(api_url, f"/orgs/{org}", token)
@@ -80,13 +116,12 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
     write_canonical(raw_dir / "user.json", _record(identity, run_id))
     write_canonical(raw_dir / "meta.json", _record(meta, run_id, endpoint_optional=True))
     write_canonical(raw_dir / "org.json", _record(org_result, run_id))
-    item_total = 0
     for number, page in enumerate(pages, start=1):
         try:
-            items = len(json.loads(page.body_text))
+            body = json.loads(page.body_text)
         except (json.JSONDecodeError, TypeError):
-            items = 0
-        item_total += items
+            body = None
+        items = len(body) if isinstance(body, list) else 0
         incomplete = ((number == len(pages)) and not listing_complete
                       and 200 <= page.status < 300)
         write_canonical(
@@ -96,27 +131,8 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
         )
 
     derive.derive_observed(out_dir, run_id=run_id)
-
-    resource_states = {}
-    for name, resource, expect in (("user", "user.json", None),
-                                   ("meta", "meta.json", None),
-                                   ("org", "org.json", "object")):
-        record = json.loads((raw_dir / resource).read_text(encoding="utf-8"))
-        resource_states[name] = derive.state_of(record, expect=expect)
-    listing_states = []
-    for page_path in sorted(raw_dir.glob("repos.page-*.json")):
-        record = json.loads(page_path.read_text(encoding="utf-8"))
-        listing_states.append(derive.state_of(record, expect="object_array"))
-    resource_states["repositories"] = next(
-        (s for s in listing_states if s != "collected"), "collected"
-    ) if listing_states else "unknown"
-
-    waits = [w for page in pages for w in page.waits]
-    waits += [w for r in (identity, meta, org_result) for w in r.waits]
+    summary = derive.run_summary(out_dir, run_id)
     report.write_report(out_dir, report.build_report(
-        api_url, org, run_id, identity_login, resource_states,
-        {"repositories": {"pages": len(pages), "items": item_total,
-                          "complete": listing_complete}},
-        waits,
+        api_url, org, run_id, identity_login, summary,
     ))
     return 0

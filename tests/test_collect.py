@@ -1,4 +1,4 @@
-﻿"""Collection behavior through the CLI seam against a scripted fake GitHub."""
+"""Collection behavior through the CLI seam against a scripted fake GitHub."""
 import json
 import tempfile
 import unittest
@@ -183,7 +183,7 @@ class AppendOnlyRawEvidence(unittest.TestCase):
 class ResponseHeaderEvidence(unittest.TestCase):
     def test_allowlisted_headers_persisted_sensitive_headers_never(self):
         script = dict(HAPPY_SCRIPT)
-        script["/orgs/acme"] = [response(200, ORG_OK["body"] and {
+        script["/orgs/acme"] = [response(200, {
             "login": "acme", "id": 42, "created_at": "2020-01-02T03:04:05Z"
         }, {
             "X-RateLimit-Remaining": "42",

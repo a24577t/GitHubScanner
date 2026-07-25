@@ -1,4 +1,4 @@
-﻿"""Taxonomy behavior through the CLI seam: degradation, 404s, malformed bodies."""
+"""Taxonomy behavior through the CLI seam: degradation, 404s, malformed bodies."""
 import json
 import tempfile
 import unittest
@@ -137,6 +137,29 @@ class MalformedResponses(unittest.TestCase):
             )
             self.assertEqual(observed["state"], "failed")
             self.assertEqual(observed["repositories"], [])
+
+    def test_failed_resources_are_detailed_in_report_failures(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [response(200, None)]
+        script["/orgs/acme"][0]["body"] = "{not-json"
+        with tempfile.TemporaryDirectory() as tmp:
+            out, report = self._run(script, tmp)
+            self.assertEqual(len(report["failures"]), 1)
+            failure = report["failures"][0]
+            self.assertEqual(failure["resource"], "org")
+            self.assertEqual(failure["status"], 200)
+            self.assertIn("/orgs/acme", failure["url"])
+
+    def test_item_count_is_zero_for_shape_invalid_page(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme/repos"] = [response(200, {"message": "unexpected"})]
+        with tempfile.TemporaryDirectory() as tmp:
+            out, _ = self._run(script, tmp)
+            page = json.loads(
+                (out / "evidence" / "raw" / RUN_ID / "repos.page-1.json")
+                .read_text(encoding="utf-8")
+            )
+            self.assertEqual(page["envelope"]["item_count"], 0)
 
     def test_non_2xx_later_page_preserves_earlier_pages_and_reports_incomplete(self):
         script = paged_script([[repo(1)], [repo(2)]])

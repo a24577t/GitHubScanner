@@ -1,5 +1,6 @@
 """HTTP transport: GET-only (observation-only is structural), token never recorded."""
 import datetime
+import time
 import urllib.error
 import urllib.request
 
@@ -38,6 +39,9 @@ def _fetch_once(url, token):
         return FetchResult(
             url, err.code, dict(err.headers), err.read().decode("utf-8"), _now()
         )
+    except (urllib.error.URLError, OSError) as err:
+        # Transport-level failure: status 0, reason preserved (never the token).
+        return FetchResult(url, 0, {}, f"transport error: {err.reason if hasattr(err, 'reason') else err}", _now())
 
 
 def _rate_limited(result):
@@ -50,8 +54,6 @@ def _rate_limited(result):
 
 def get(base_url, path, token):
     """Authenticated GET with bounded, recorded retries on rate limits and 5xx."""
-    import time
-
     url = base_url.rstrip("/") + path
     waits, attempts = [], 0
     while True:
