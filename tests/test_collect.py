@@ -180,6 +180,41 @@ class AppendOnlyRawEvidence(unittest.TestCase):
             self.assertEqual(before, after, "existing evidence must remain byte-identical")
 
 
+class ResponseHeaderEvidence(unittest.TestCase):
+    def test_allowlisted_headers_persisted_sensitive_headers_never(self):
+        script = dict(HAPPY_SCRIPT)
+        script["/orgs/acme"] = [response(200, ORG_OK["body"] and {
+            "login": "acme", "id": 42, "created_at": "2020-01-02T03:04:05Z"
+        }, {
+            "X-RateLimit-Remaining": "42",
+            "X-GitHub-Enterprise-Version": "3.17.0",
+            "Set-Cookie": "sensitive=1",
+            "Date": "Fri, 24 Jul 2026 00:00:00 GMT",
+        })]
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            with serve(script) as (base, _):
+                self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            raw = out / "evidence" / "raw" / RUN_ID
+            envelope = json.loads((raw / "org.json").read_text(encoding="utf-8"))["envelope"]
+            headers = envelope["response_headers"]
+            self.assertEqual(headers["x-ratelimit-remaining"], "42")
+            self.assertEqual(headers["x-github-enterprise-version"], "3.17.0")
+            for forbidden in ("set-cookie", "date", "authorization", "cookie"):
+                self.assertNotIn(forbidden, headers)
+            self.assertNotIn("request_headers", envelope)
+
+    def test_link_header_retained_on_listing_pages(self):
+        script = paged_script([[repo(1)], [repo(2)]])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            with serve(script) as (base, _):
+                self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            raw = out / "evidence" / "raw" / RUN_ID
+            page1 = json.loads((raw / "repos.page-1.json").read_text(encoding="utf-8"))
+            self.assertIn("link", page1["envelope"]["response_headers"])
+
+
 class Degradation(unittest.TestCase):
     def _report(self, script, tmp):
         with serve(script) as (base, _):

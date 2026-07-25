@@ -11,6 +11,29 @@ class RunFrameError(Exception):
     pass
 
 
+# Non-sensitive response headers retained as evidence: platform identity,
+# pagination, and rate-limit/retry context. Request headers are never persisted.
+HEADER_ALLOWLIST = frozenset({
+    "link",
+    "retry-after",
+    "x-ratelimit-limit",
+    "x-ratelimit-remaining",
+    "x-ratelimit-reset",
+    "x-ratelimit-used",
+    "x-github-enterprise-version",
+    "x-github-media-type",
+    "x-github-api-version-selected",
+})
+
+
+def _evidence_headers(headers):
+    return {
+        name.lower(): value
+        for name, value in headers.items()
+        if name.lower() in HEADER_ALLOWLIST
+    }
+
+
 def _generated_run_id():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
@@ -20,6 +43,7 @@ def _record(result, run_id, **extra):
         "captured_at": result.captured_at,
         "method": "GET",
         "run_id": run_id,
+        "response_headers": _evidence_headers(result.headers),
         "status": result.status,
         "url": result.url,
         "attempts": result.attempts,
