@@ -28,10 +28,21 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     if args.command == "collect":
-        if not args.api_url.startswith("https://"):
+        allow_http = os.environ.get("COLLECTOR_INSECURE_ALLOW_HTTP") == "1"
+        if not args.api_url.startswith("https://") and not allow_http:
             return frame_error("--api-url must be an https:// URL (ADR-0003)")
-        if not os.environ.get("GITHUB_TOKEN"):
+        token = os.environ.get("GITHUB_TOKEN")
+        if not token:
             return frame_error("GITHUB_TOKEN environment variable is required")
+        from collector.collect import RunFrameError, run_collect
+
+        try:
+            return run_collect(
+                args.api_url, args.org, args.out, token,
+                run_id=args.run_id, max_pages=args.max_pages,
+            )
+        except RunFrameError as err:
+            return frame_error(str(err))
     return 0
 
 
