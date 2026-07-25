@@ -18,18 +18,19 @@ def scaffold_bytes(out):
 
 class OfflineDerivation(unittest.TestCase):
     def test_derive_regenerates_observed_byte_identical_offline(self):
-        with serve(HAPPY_SCRIPT) as (base, _), tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
-            self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
-        # server is down now: derivation must be fully offline
-        original = {k: v for k, v in scaffold_bytes(out).items()
-                    if k.startswith("observed")}
-        shutil.rmtree(out / "observed")
-        result = run_cli(["derive", "--out", str(out)])
-        self.assertEqual(result.returncode, 0, result.stderr)
-        regenerated = {k: v for k, v in scaffold_bytes(out).items()
-                       if k.startswith("observed")}
-        self.assertEqual(original, regenerated)
+            with serve(HAPPY_SCRIPT) as (base, _):
+                self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            # server is down now: derivation must be fully offline
+            original = {k: v for k, v in scaffold_bytes(out).items()
+                        if k.startswith("observed")}
+            shutil.rmtree(out / "observed")
+            result = run_cli(["derive", "--out", str(out)])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            regenerated = {k: v for k, v in scaffold_bytes(out).items()
+                           if k.startswith("observed")}
+            self.assertEqual(original, regenerated)
 
     def test_serialization_is_lf_utf8_with_trailing_newline(self):
         with serve(HAPPY_SCRIPT) as (base, _), tempfile.TemporaryDirectory() as tmp:
