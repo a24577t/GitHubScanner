@@ -16,6 +16,7 @@ It is also **agent-neutral**. It names no AI assistant and assumes no permanent 
   - [`adr/0003-dual-mode-evidence-transport.md`](adr/0003-dual-mode-evidence-transport.md) (MADR-0003). Dual-mode evidence transport: direct repository access or indirect review through an owner-approved Review Evidence Package; five claim registers; the Observer role with the governed-review-artifact invariant and the execution-participant threshold. Architecture accepted, implementation deferred.
 - **The design** — [`lifecycle-model.md`](lifecycle-model.md). One implementation of the axioms: two synchronized lifecycles (work-item and phase), coupled by the Milestone-Complete predicate, with Refinement and Remediation excursions and a session lifecycle. A design — it may evolve without reopening either decision; its Traceability section maps each construct to a decision, a principle, or evolvable design.
   - [`decision-gated-implementation-lifecycle.md`](decision-gated-implementation-lifecycle.md) — a design elaborating the *In Implementation* state and the Refinement excursion: no governance or system-architecture decision is made during implementation, the decision phase is re-enterable, and Architecture Conformance Review gates Merge. Agent-neutral; governs human and agent contributors alike.
+  - [`transfer-architecture.md`](transfer-architecture.md) — a design under MADR-0003: the Review Evidence Package, operating modes and degradation profiles, provenance/attestation model, governed review artifacts, and the Observer design. Architecture accepted; implementation deferred until its recorded trigger.
 - **The enduring constraints** — [`principles.md`](principles.md). Seven principles; several are corollaries of the ADRs (P2–P4, P7 of MADR-0001; P5 of MADR-0002).
 - **The vocabulary** — [`glossary.md`](glossary.md). Project-independent terms, with `_Avoid_` guidance.
 - **The decision register** — [`adr/`](adr/). Methodology ADRs (MADRs), kept separate from any project's architecture ADRs so the process evolves independently.
@@ -31,7 +32,7 @@ It is also **agent-neutral**. It names no AI assistant and assumes no permanent 
 
 ## Status
 
-These documents are **accepted** as one coherent architectural unit: MADR-0001, MADR-0002, MADR-0003, `principles.md`, `lifecycle-model.md`, `glossary.md`, `decision-gated-implementation-lifecycle.md`, `skill-execution-map.md`, and this README. Subsequent changes follow the methodology's own discipline — enduring decisions as new or refined MADRs (never edited in place, per MADR-0002); design changes in `lifecycle-model.md`. Acceptance dates and editorial history live in Git, not in these documents.
+These documents are **accepted** as one coherent architectural unit: MADR-0001, MADR-0002, MADR-0003, `principles.md`, `lifecycle-model.md`, `glossary.md`, `decision-gated-implementation-lifecycle.md`, `skill-execution-map.md`, `transfer-architecture.md`, and this README. Subsequent changes follow the methodology's own discipline — enduring decisions as new or refined MADRs (never edited in place, per MADR-0002); design changes in `lifecycle-model.md`. Acceptance dates and editorial history live in Git, not in these documents.
 
 ## Not yet present (deliberately)
 
