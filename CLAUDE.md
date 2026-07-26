@@ -154,8 +154,8 @@ Single-context — one `CONTEXT.md` and `docs/adr/` at the repo root, created la
 
 ### Repo-owner skills
 
-Repository-owned `*-repo-owner` skills wrap upstream Matt Pocock skills with repository-specific deltas; upstream skills are never modified. See `docs/agents/repo-owner-skills.md`.
+Repository-owned `*-repo-owner` skills wrap upstream Matt Pocock skills with repository-specific deltas; upstream skills are never modified. See `.ai/repository-owner/repo-owner-skills.md`.
 
 ## Methodology
 
-The project follows the methodology in `.ai/methodology/` (project-independent lifecycle model, principles, and glossary). Engineering work executes per the Skill Execution Map (`.ai/methodology/skill-execution-map.md`): skills execute, Repository Gates authorize. Session startup routing: `.ai/prompts/methodology/operator-guide.md` → `.ai/prompts/methodology/session-bootstrap.md`. Collaboration startup: `.ai/collaboration/load-order.md`.
+The project follows the methodology in `.ai/repository/methodology/` (project-independent lifecycle model, principles, and glossary). Engineering work executes per the Skill Execution Map (`.ai/repository/methodology/skill-execution-map.md`): skills execute, Repository Gates authorize. Session startup routing: `.ai/repository/methodology/prompts/operator-guide.md` → `.ai/repository/methodology/prompts/session-bootstrap.md`. Role entry: collaborator sessions start at `.ai/collaborator/bootstrap.md`; repository-owner sessions at `.ai/repository-owner/bootstrap.md`. The `.ai` ownership map: `.ai/README.md`.
