@@ -24,7 +24,7 @@ authority model without touching them.
 - **Gate discipline.** Every repository-owner skill states where it stops.
   Skills prepare repository changes; repository authority changes only at
   Repository Gates (see the
-  [Skill Execution Map](../../.ai/methodology/skill-execution-map.md)).
+  [Skill Execution Map](../repository/methodology/skill-execution-map.md)).
 
 ## Current specializations
 
