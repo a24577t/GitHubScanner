@@ -17,6 +17,7 @@ Await repository-owner authorization for the next implementation slice. The GHAS
 ## Completed Work Items
 
 - **Vertical Slice 1 — Observation Collector** (PR #19, merged `193fad1`): `collect`/`derive` CLI per the approved specification; evidence: red-first TDD record, two independent quality-gate rounds (FAIL → corrections QG-01..06 → PASS), /code-review Standards PASS + Spec PASS, token-secrecy and offline byte-identity proven in-suite.
+- **Validation Environment** (PR #21, merged `bdb752d`, independent Quality Gate PASS at `7ea9944`): `GHScannerLab` organization with three Slice-1 fixtures; first live github.com validation run `20260725T184527Z` committed under `docs/validation/runs/`; environment documented in `docs/validation/validation-environment.md` (honest scope: Free-plan github.com API surface only). Slice 2's real-environment-validation precondition is now satisfied.
 
 ## Architecture
 
@@ -34,4 +35,4 @@ Await repository-owner authorization for the next implementation slice. The GHAS
 
 ## Next Milestone
 
-Vertical Slice 2 (scope to be authorized by the repository owner) — candidate scope per the Slice 1 specification's deferrals: security-configuration collection once the collection framework is validated against a real environment. In parallel: wayfinder discovery tickets (platform, licensing, native controls, CI/runners, estate shape).
+Vertical Slice 2 (scope to be authorized by the repository owner) — candidate scope per the Slice 1 specification's deferrals: security-configuration collection. Its real-environment-validation precondition is satisfied (validation environment established, first live run committed). In parallel: wayfinder discovery tickets (platform, licensing, native controls, CI/runners, estate shape).
