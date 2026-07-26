@@ -36,7 +36,7 @@ Do not load an artifact merely because it is useful. Load the required chain eve
 - *Resuming in-flight work* — the Repository Continuity Artifact (produced by [`create-repository-continuity.md`](../prompts/methodology/create-repository-continuity.md) when a session ends with uncommitted in-flight work) is read *by* session-bootstrap as subordinate context; no separate load.
 - *Acting as reviewer or quality gate* — [`../prompts/methodology/review-discipline.md`](../prompts/methodology/review-discipline.md): the authoritative review methodology — repository artifacts (PR diff / changed files) as primary review evidence, and finding classification.
 - *Running a phase / quality gate* — [`../prompts/methodology/phase-gate-review.md`](../prompts/methodology/phase-gate-review.md).
-- *Entering implementation (work-item execution)* — load the methodology governing implementation work (currently the [Decision-Gated Implementation Lifecycle](../methodology/decision-gated-implementation-lifecycle.md)).
+- *Entering implementation (work-item execution)* — load the [Skill Execution Map](../methodology/skill-execution-map.md) (the operational skill sequence and Repository Gates) and the methodology explaining it (the [Decision-Gated Implementation Lifecycle](../methodology/decision-gated-implementation-lifecycle.md)).
 - *Architecture / methodology work* — the methodology unit ([`../methodology/`](../methodology/)) and the architecture domain (Baseline, `docs/adr/`, `CONTEXT.md`), reached through the operator-guide — not restated here.
 - *Reviewing implementation* — the applicable standards ([`../../docs/standards/engineering-standards.md`](../../docs/standards/engineering-standards.md)) and the active specification.
 

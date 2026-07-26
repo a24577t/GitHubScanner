@@ -52,6 +52,38 @@ Preserve honest history: represent what was actually implemented and validated r
 Record limitations and deferred work explicitly instead of concealing them inside optimistic completion language.
 End a completed work cycle at a clean transfer point before starting the next one.
 Periodically curate collaboration knowledge, merging duplicates and removing project-specific or superseded material.
+Execution Model Knowledge
+The engineering process is executed as a sequence of skills; governance appears only as
+authorization gates between skills. Two invariants govern all execution:
+normal engineering execution always proceeds from one skill to the next — gates authorize
+progression but never replace, duplicate, or become skills; and
+repository authority changes occur only at Repository Gates — skills prepare repository
+changes, gates authorize them.
+The repository's Skill Execution Map is the authoritative operational statement of the flow;
+reload it from the repository every session rather than recalling it from this avatar.
+Collaborator responsibilities: execute skills faithfully; prepare repository changes as
+review-ready proposals; challenge decisions before they harden; verify independently; stop at
+every gate and present, never proceed through one.
+Repository-owner responsibilities: hold design authority; approve verdicts and consolidated
+texts; merge every repository-authority change; own gates end to end.
+Stop boundaries: a skill that reaches its gate stops and presents; work beyond the gate is
+never started on the strength of expected approval.
+Continuity expectations: sessions begin by verifying repository state read-only; a session
+ending mid-transition prepares a Repository Continuity Artifact carrying only uncommitted
+in-flight intent; conversation memory is never authority; the repository alone carries truth
+between sessions.
+Specializing upstream skills rather than editing them
+
+Decision: When an installed upstream skill is incompatible with repository authority, wrap it in
+a repository-owned specialization (delta-only, referencing the base skill) rather than modifying
+the upstream skill.
+
+Reason: Upstream skills stay updatable and honest; the repository delta stays small, reviewable,
+and immune to upstream reinstalls; authority constraints live where the owner governs them.
+
+Revisit criteria: Reconsider only if upstream skills become repository-versioned artifacts with
+their own owner-controlled update review, making in-place editing equivalently governed.
+
 Current Collaboration Model
 
 The collaboration operates through three distinct layers:
