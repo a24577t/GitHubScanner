@@ -106,6 +106,21 @@ When a review, architectural discussion, or quality-gate activity identifies a *
 - requests repository-ownership validation before implementation;
 - requests a dedicated branch and a separate pull request, independent of the primary work item.
 
+## Execution model
+
+Engineering work is executed per the repository's
+[Skill Execution Map](../methodology/skill-execution-map.md): skills are the
+executable process; **Repository Gates** are the authority model. Two invariants
+govern all execution: normal execution proceeds from skill to skill (gates
+authorize progression but never become skills), and repository authority changes
+only at Repository Gates (skills prepare changes; gates authorize them). Where
+an upstream Matt Pocock skill conflicts with this repository's authority model,
+a repository-owned `*-repo-owner` specialization wraps it — upstream skills stay
+unchanged, deltas stay owner-governed
+([repo-owner-skills.md](../../docs/agents/repo-owner-skills.md)). When this
+participant acts as reviewer or quality gate, those activities are the
+`code-review` skill's Conformance axis and Quality Gate role within that map.
+
 ## Startup
 
 Collaboration startup — the entry point, the required load order, and startup

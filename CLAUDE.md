@@ -152,6 +152,10 @@ Default vocabulary — the five canonical roles used verbatim (`needs-triage`, `
 
 Single-context — one `CONTEXT.md` and `docs/adr/` at the repo root, created lazily by `/domain-modeling`. See `docs/agents/domain.md`.
 
+### Repo-owner skills
+
+Repository-owned `*-repo-owner` skills wrap upstream Matt Pocock skills with repository-specific deltas; upstream skills are never modified. See `docs/agents/repo-owner-skills.md`.
+
 ## Methodology
 
-The project follows the methodology in `.ai/methodology/` (project-independent lifecycle model, principles, and glossary). Session startup routing: `.ai/prompts/methodology/operator-guide.md` → `.ai/prompts/methodology/session-bootstrap.md`. Collaboration startup: `.ai/collaboration/load-order.md`.
+The project follows the methodology in `.ai/methodology/` (project-independent lifecycle model, principles, and glossary). Engineering work executes per the Skill Execution Map (`.ai/methodology/skill-execution-map.md`): skills execute, Repository Gates authorize. Session startup routing: `.ai/prompts/methodology/operator-guide.md` → `.ai/prompts/methodology/session-bootstrap.md`. Collaboration startup: `.ai/collaboration/load-order.md`.
