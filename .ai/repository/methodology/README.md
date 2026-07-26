@@ -32,7 +32,7 @@ It is also **agent-neutral**. It names no AI assistant and assumes no permanent 
 
 ## Status
 
-These documents are **accepted** as one coherent architectural unit: MADR-0001, MADR-0002, MADR-0003, `principles.md`, `lifecycle-model.md`, `glossary.md`, `decision-gated-implementation-lifecycle.md`, `skill-execution-map.md`, `transfer-architecture.md`, and this README. Subsequent changes follow the methodology's own discipline — enduring decisions as new or refined MADRs (never edited in place, per MADR-0002); design changes in `lifecycle-model.md`. Acceptance dates and editorial history live in Git, not in these documents.
+These documents are **accepted** as one coherent architectural unit: MADR-0001, MADR-0002, MADR-0003, `principles.md`, `lifecycle-model.md`, `glossary.md`, `decision-gated-implementation-lifecycle.md`, `skill-execution-map.md`, `transfer-architecture.md`, and this README. Subsequent changes follow the methodology's own discipline — enduring decisions as new or refined MADRs (never edited in place, per MADR-0002); evolvable-design changes in the applicable accepted design document (`lifecycle-model.md`, `decision-gated-implementation-lifecycle.md`, `skill-execution-map.md`, `transfer-architecture.md`); a governing MADR is reopened only when an enduring decision changes. Acceptance dates and editorial history live in Git, not in these documents.
 
 ## Not yet present (deliberately)
 
