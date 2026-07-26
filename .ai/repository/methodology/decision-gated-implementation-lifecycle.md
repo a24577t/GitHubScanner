@@ -1,10 +1,10 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Decision-Gated Implementation Lifecycle
 
-**Status: proposed** (draft for review). A *design* under [MADR-0001](adr/0001-repository-authoritative-continuity.md) and [MADR-0002](adr/0002-immutable-baselines-append-only-refinement.md); it elaborates the **In Implementation** state and the **Refinement excursion** of the [Lifecycle Model](lifecycle-model.md) and may evolve without reopening either axiom.
+**Status: accepted.** A *design* under [MADR-0001](adr/0001-repository-authoritative-continuity.md) and [MADR-0002](adr/0002-immutable-baselines-append-only-refinement.md); it elaborates the **In Implementation** state and the **Refinement excursion** of the [Lifecycle Model](lifecycle-model.md) and may evolve without reopening either axiom.
 
 **Scope.** Agent-neutral and role-neutral ([P1](principles.md)): this lifecycle governs **every contributor** — human or implementation agent — identically. It is not an instruction to an assistant; it is how work crosses from decision to code in this repository. A concrete project appears only as a marked *Example*.
 
