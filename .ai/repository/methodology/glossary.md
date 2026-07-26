@@ -60,6 +60,10 @@ Any non-stable state. Mid-work; resuming it requires a Repository Continuity Art
 **Session**
 One working session of a single AI assistant in a role assigned by the human architect. Has its own lifecycle: bootstrap, work, close (clean, or by emitting a Repository Continuity Artifact).
 
+**Observer**
+A collaboration role that inspects repository state, validates, and reports findings — with **no verdict or gate standing**. An observer does not commit, repair, merge, approve, or begin subsequent work, and produces findings only as governed review artifacts ([MADR-0003](adr/0003-dual-mode-evidence-transport.md)). Engine-neutral; assigned by the human architect like any role ([P1](principles.md)).
+_Avoid_: naming a specific engine as "the observer" in durable artifacts; granting an observer lifecycle capabilities — that crosses MADR-0003's execution-participant threshold and requires a new methodology decision.
+
 **Bootstrap**
 The transition that establishes a session's context by independently reading and verifying repository state — never by trusting prior chat, another assistant's context, or an unverified continuity artifact (MADR-0001).
 
