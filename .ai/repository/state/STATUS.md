@@ -4,7 +4,7 @@
 
 ## Repository Version
 
-v0.1.0
+v0.2.0
 
 ## Current Phase
 
@@ -21,6 +21,7 @@ Implement Vertical Slice 2 — Repository Configuration Collector — per the ap
 - **Methodology ratification and collaboration refresh** (2026-07-26): methodology audit against the Matt Pocock skill set; Skill Execution Map adopted as the operational execution model with its two governing invariants (`.ai/methodology/skill-execution-map.md`); repo-owner specialization skill pattern established (`docs/agents/repo-owner-skills.md`; first instance `to-spec-repo-owner`, PR #23 merged `f0ad563`); collaboration contract, load order, and Collaboration Avatar updated (PR #24, merged `e943ed1`). Slice 2 Architecture Grill completed 2026-07-26 with verdict PASS WITH CONDITIONS, owner-approved.
 - **Slice 2 architecture accepted** (⟦G-Accept⟧, PR #25 merged `b346159`): ADRs 0004–0007 accepted; Vertical Slice 2 specification and normative validation matrix approved (architecture grill, 2026-07-26; consolidation by `to-spec-repo-owner`); acceptance closeout created future-work issues #26–#28 (Observation Target Model; `security_and_analysis` projection; per-ruleset detail).
 - **`.ai` information-architecture migration** (PR #29, merged `872544e`; approved design 2026-07-26): audience/ownership namespaces `collaborator/`, `repository-owner/`, `repository/{methodology, state, history}`; history package `ia-redesign-2026-07` with exact legacy snapshot — **immutable as of the merge**, per its recorded boundary (the merge SHA is deliberately not embedded in the package; its README documents the self-reference convention); two dead files and one superseded draft removed (evidence in the package); all references updated atomically; post-merge validation 42/42 tests OK.
+- **Methodology Release v0.2.0 closeout** (PRs #31, #32, #33, #35): MADR-0003 accepted; transfer architecture accepted — Observer and Review Evidence Package (REP) recorded as Architecture Accepted / Implementation Deferred under [issue #34](https://github.com/a24577t/GitHubScanner/issues/34); Decision-Gated Implementation Lifecycle ratified; Observer added to the controlled vocabulary; Collaboration Avatar regenerated through the readiness gate; GHAS SKU research evidence preserved under `docs/research/`.
 
 ## Architecture
 
@@ -40,4 +41,9 @@ Implement Vertical Slice 2 — Repository Configuration Collector — per the ap
 
 ## Next Milestone
 
-Vertical Slice 2 implementation (T1–T10 per the approved specification), starting at T1 on repository-owner authorization. After Slice 2 implementation and validation complete, the binding post-slice gate: Architecture Consolidation → `/domain-modeling` and `CONTEXT.md` creation → only then Slice 3 activity. In parallel: wayfinder discovery tickets (platform, licensing, native controls, CI/runners, estate shape).
+Roadmap, in accepted order:
+
+1. Vertical Slice 2 implementation (T1–T10 per the approved specification); T1 begins only with explicit repository-owner authorization.
+2. The binding post-slice architecture gate: Architecture Consolidation → `/domain-modeling` and `CONTEXT.md` creation → only then Slice 3 activity.
+3. Observer and Review Evidence Package (REP) implementation under [issue #34](https://github.com/a24577t/GitHubScanner/issues/34) — only when its recorded trigger and explicit repository-owner authorization are satisfied; Architecture Accepted / Implementation Deferred until then.
+4. Wayfinder discovery tickets (platform, licensing, native controls, CI/runners, estate shape) may proceed in parallel where already authorized by repository artifacts.
