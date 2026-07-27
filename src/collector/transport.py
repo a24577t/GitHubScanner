@@ -1,8 +1,24 @@
 """HTTP transport: GET-only (observation-only is structural), token never recorded."""
 import datetime
 import time
+import types
 import urllib.error
 import urllib.request
+
+MAX_ATTEMPTS = 3
+RETRY_AFTER_MAX_SECONDS = 60
+PARK_SLACK_SECONDS = 5
+MAX_PARK_SECONDS = 3900
+
+SYSTEM_CLOCK = types.SimpleNamespace(
+    sleep=time.sleep, epoch=time.time, monotonic=time.monotonic
+)
+
+# Rate-limit context retained inside wait records (response headers only).
+RATE_LIMIT_HEADERS = frozenset({
+    "retry-after", "x-ratelimit-limit", "x-ratelimit-remaining",
+    "x-ratelimit-reset", "x-ratelimit-used",
+})
 
 
 class FetchResult:
@@ -16,14 +32,12 @@ class FetchResult:
         self.captured_at = captured_at
         self.waits = []
         self.attempts = 1
+        self.wait_records = []
+        self.termination_reason = None
 
 
 def _now():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-MAX_ATTEMPTS = 3
-MAX_WAIT_SECONDS = 60
 
 
 def _fetch_once(url, token):
@@ -52,20 +66,121 @@ def _rate_limited(result):
                  or result.headers.get("x-ratelimit-remaining") == "0"))
 
 
-def get(base_url, path, token):
-    """Authenticated GET with bounded, recorded retries on rate limits and 5xx."""
+def _parse_seconds(value):
+    try:
+        seconds = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return seconds if seconds >= 0 else None
+
+
+def _record_wait(result, attempt, category, requested, maximum, outcome,
+                 reason=None):
+    return {
+        "category": category,
+        "attempt": attempt,
+        "status": result.status,
+        "rate_limit_headers": {
+            name: value for name, value in result.headers.items()
+            if name in RATE_LIMIT_HEADERS
+        },
+        "requested_seconds": requested,
+        "elapsed_seconds": None,
+        "maximum_seconds": maximum,
+        "outcome": outcome,
+        "reason": reason,
+    }
+
+
+def _wait_and_record(clock, result, attempt, category, requested, maximum,
+                     reason, waits, records):
+    record = _record_wait(result, attempt, category, requested, maximum,
+                          "retried", reason)
+    before = clock.monotonic()
+    clock.sleep(requested)
+    record["elapsed_seconds"] = round(clock.monotonic() - before, 3)
+    records.append(record)
+    waits.append(requested)
+
+
+def _finish(result, attempts, waits, records, termination_reason):
+    result.attempts = attempts
+    result.waits = waits
+    result.wait_records = records
+    result.termination_reason = termination_reason
+    return result
+
+
+def get(base_url, path, token, clock=SYSTEM_CLOCK):
+    """Authenticated GET with bounded, recorded waits per ADR-0007."""
     url = base_url.rstrip("/") + path
-    waits, attempts = [], 0
+    waits, records = [], []
+    attempts = 0
+    budget = 0
+    parked = False
     while True:
         attempts += 1
+        budget += 1
         result = _fetch_once(url, token)
-        retryable = _rate_limited(result) or result.status >= 500
-        if not retryable or attempts >= MAX_ATTEMPTS:
-            result.waits, result.attempts = waits, attempts
-            return result
-        wait = min(int(result.headers.get("retry-after", "1") or "1"), MAX_WAIT_SECONDS)
-        waits.append(wait)
-        time.sleep(wait)
+        rate_limited = _rate_limited(result)
+        if not rate_limited and result.status < 500:
+            return _finish(result, attempts, waits, records, None)
+        remaining_zero = result.headers.get("x-ratelimit-remaining") == "0"
+        reset = _parse_seconds(result.headers.get("x-ratelimit-reset"))
+        retry_after = _parse_seconds(result.headers.get("retry-after"))
+        # Remaining-zero with a missing/unparseable reset: the fallback wait
+        # preserves the unusable-reset evidence reason (ADR-0007).
+        reason = ("unusable-rate-limit-reset"
+                  if rate_limited and remaining_zero and reset is None else None)
+        if rate_limited and retry_after is not None:
+            # Precedence 1: a valid Retry-After — bounded, never a park.
+            if retry_after > RETRY_AFTER_MAX_SECONDS:
+                # Never clamped, never retried early.
+                record = _record_wait(result, attempts, "retry-after",
+                                      retry_after, RETRY_AFTER_MAX_SECONDS,
+                                      "retry-after-exceeds-maximum", reason)
+                record["elapsed_seconds"] = 0
+                records.append(record)
+                return _finish(result, attempts, waits, records,
+                               "retry-after-exceeds-maximum")
+            if budget >= MAX_ATTEMPTS:
+                return _finish(result, attempts, waits, records, None)
+            _wait_and_record(clock, result, attempts, "retry-after",
+                             retry_after, RETRY_AFTER_MAX_SECONDS, reason,
+                             waits, records)
+            continue
+        if rate_limited and remaining_zero and reset is not None:
+            # Precedence 2: affirmative primary exhaustion parks at most once.
+            if parked:
+                # Renewed affirmative exhaustion: terminate as a recorded
+                # failure, never re-park (ADR-0007).
+                records[-1]["outcome"] = "renewed-exhaustion"
+                return _finish(result, attempts, waits, records,
+                               "rate_limit_renewed_exhaustion")
+            if budget >= MAX_ATTEMPTS:
+                return _finish(result, attempts, waits, records, None)
+            requested = int(max(0, reset - clock.epoch())) + PARK_SLACK_SECONDS
+            if requested > MAX_PARK_SECONDS:
+                # Never clamped, never retried before the advertised reset.
+                record = _record_wait(result, attempts, "primary-park",
+                                      requested, MAX_PARK_SECONDS,
+                                      "rate_limit_reset_exceeds_maximum_park")
+                record["elapsed_seconds"] = 0
+                records.append(record)
+                return _finish(result, attempts, waits, records,
+                               "rate_limit_reset_exceeds_maximum_park")
+            _wait_and_record(clock, result, attempts, "primary-park",
+                             requested, MAX_PARK_SECONDS, None, waits, records)
+            parked = True
+            budget += 1  # a park consumes an attempt (ADR-0007)
+            continue
+        # Precedence 3: existing bounded retry for other retryable responses.
+        if budget >= MAX_ATTEMPTS:
+            return _finish(result, attempts, waits, records, None)
+        requested = min(retry_after if retry_after is not None else 1,
+                        RETRY_AFTER_MAX_SECONDS)
+        _wait_and_record(clock, result, attempts, "retry", requested,
+                         RETRY_AFTER_MAX_SECONDS, reason, waits, records)
 
 
 def _has_next(headers):
@@ -73,12 +188,13 @@ def _has_next(headers):
     return any('rel="next"' in part for part in link.split(","))
 
 
-def paginate(base_url, path, token, max_pages=100):
+def paginate(base_url, path, token, max_pages=100, clock=SYSTEM_CLOCK):
     """Drain a Link-paginated listing; returns (pages, complete)."""
     separator = "&" if "?" in path else "?"
     pages = []
     for number in range(1, max_pages + 1):
-        page = get(base_url, f"{path}{separator}per_page=100&page={number}", token)
+        page = get(base_url, f"{path}{separator}per_page=100&page={number}",
+                   token, clock=clock)
         pages.append(page)
         if page.status < 200 or page.status >= 300:
             return pages, False
