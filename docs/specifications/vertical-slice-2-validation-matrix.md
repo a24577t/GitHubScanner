@@ -53,3 +53,11 @@ offline-only rows.
 | V38 | Discovery equivalence | offline | same raw pages | F | Collection plan == offline rederivation (ordered set) | Canonical-rule proof | M |
 | V39 | Coverage under incomplete inventory | offline | truncated inventory | F | coverage.inventory_state carries inventory vocabulary | Descriptor states never converted | M |
 | V40 | Slice-1-tree compatibility | offline | Slice 1 run tree | F | New projections derive all-unknown/empty; org artifacts byte-stable | Historical derivability preserved | M |
+
+**V36 clarification (ratified refinement, E1, 2026-07-26):** in row V36's
+fixture column, "reserved" means names containing characters excluded by the
+annotation-safety rule, not reserved device-name words. A device-name
+annotation such as `CON` remains included verbatim because the actual
+directory is ID-prefixed (for example `42-CON`) and is therefore not the
+reserved device name itself. The normative annotation-safety rule is
+unchanged: `^[A-Za-z0-9_.-]{1,100}$`, with no trailing dot.
