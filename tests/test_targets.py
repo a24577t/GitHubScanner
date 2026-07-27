@@ -113,5 +113,31 @@ class DescriptorInputs(unittest.TestCase):
                 self.assertEqual(missing, ("default_branch",))
 
 
+class Addressing(unittest.TestCase):
+    def test_safe_annotation_is_appended_verbatim(self):
+        for name in ("repo-1", "a", "A_b.C-9", "a" * 100, "CON", "nul"):
+            with self.subTest(name=name):
+                self.assertEqual(targets.directory_key(42, name), f"42-{name}")
+
+    def test_unsafe_annotations_yield_id_only_directory(self):
+        # V36: reserved-character, trailing-dot, oversized, non-string names —
+        # omitted, never normalized, escaped, replaced, truncated, or repaired.
+        for name in ("repo.", "a" * 101, "", "a b", "a/b", "a:b", "a*b",
+                     "a?b", "naïve", "répo", None, 7, ["x"]):
+            with self.subTest(name=name):
+                self.assertEqual(targets.directory_key(42, name), "42")
+
+    def test_annotation_never_affects_eligibility_or_identity(self):
+        # An annotation-unsafe name leaves the target eligible, its identity
+        # intact, and only the storage address reduced to the ID.
+        unsafe = {"id": 4, "full_name": "o/repo.", "name": "repo.",
+                  "default_branch": "main"}
+        (target,) = targets.discover_targets([page([unsafe])])
+        self.assertEqual(target["full_name"], "o/repo.")
+        self.assertEqual(targets.directory_key(target["id"], target["name"]), "4")
+        values, missing = targets.descriptor_inputs(target, PROTECTION)
+        self.assertEqual((values, missing), ({"default_branch": "main"}, ()))
+
+
 if __name__ == "__main__":
     unittest.main()

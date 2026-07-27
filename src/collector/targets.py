@@ -1,4 +1,6 @@
 """Canonical target discovery and evidence addressing (ADR-0005)."""
+import re
+
 from collector.taxonomy import body_of, shape_ok
 
 # --- Canonical target discovery -------------------------------------------
@@ -62,3 +64,21 @@ def descriptor_inputs(target, descriptor):
         else:
             missing.append(name)
     return values, tuple(missing)
+
+
+# --- Evidence addressing ---------------------------------------------------
+# Filesystem paths are scanner-defined storage addresses, never evidence of
+# GitHub facts. The repository ID is the addressing key; the annotation is
+# non-evidentiary and never affects eligibility or any observed state.
+
+# Annotation-safety rule (spec: scanner-defined, deliberately conservative).
+# A trailing "." is excluded separately; ID-keyed directories already defuse
+# reserved device names, which is why ADR-0005 rejected name-keyed layouts.
+_ANNOTATION = re.compile(r"^[A-Za-z0-9_.-]{1,100}$")
+
+
+def directory_key(repo_id, name):
+    """`<repo-id>[-<name-annotation>]`: annotation verbatim or omitted."""
+    if isinstance(name, str) and _ANNOTATION.match(name) and not name.endswith("."):
+        return f"{repo_id}-{name}"
+    return str(repo_id)
