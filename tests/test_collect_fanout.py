@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from fake_github import response, serve
-from test_collect import HAPPY_SCRIPT, META_OK, ORG_OK, RUN_ID, USER_OK, collect, repo
+from test_collect import META_OK, ORG_OK, RUN_ID, USER_OK, collect, repo
 
 PROTECTION_BODY = {
     "enforce_admins": {"enabled": True},
