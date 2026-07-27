@@ -8,7 +8,7 @@ WALL = 1_000_000.0
 TOKEN = "test-token"
 
 WAIT_RECORD_FIELDS = {
-    "category", "attempt", "status", "rate_limit_headers",
+    "category", "attempt", "status", "url", "rate_limit_headers",
     "requested_seconds", "elapsed_seconds", "maximum_seconds", "outcome",
     "reason",
 }
@@ -72,6 +72,21 @@ class PrimaryPark(unittest.TestCase):
             park["rate_limit_headers"]["x-ratelimit-reset"],
             str(int(WALL) + 100),
         )
+        self.assertTrue(park["url"].endswith("/park"))
+
+    def test_v21_remaining_zero_is_parsed_not_literal_matched(self):
+        # ADR-0007: "x-ratelimit-remaining parsed as exactly zero". A 429 is
+        # always rate-limited, so the exhaustion check itself is exercised
+        # (Slice 1's 403 marker gate keeps its literal match untouched).
+        clock = FakeClock()
+        script = {"/park": [response(429, {"message": "rate limited"},
+                                     {"X-RateLimit-Remaining": "00",
+                                      "X-RateLimit-Reset": str(int(WALL) + 100)}),
+                            response(200, {"ok": 1})]}
+        result = fetch(script, "/park", clock)
+        self.assertEqual(result.status, 200)
+        self.assertEqual(clock.sleeps, [105])
+        self.assertEqual(result.wait_records[0]["category"], "primary-park")
 
     def test_v21_every_wait_record_carries_the_full_evidence_schema(self):
         clock = FakeClock()
