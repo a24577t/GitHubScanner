@@ -93,10 +93,11 @@ def _record_wait(result, attempt, category, requested, maximum, outcome,
     }
 
 
-def _refused(result, attempt, category, requested, maximum, token, reason=None):
+def _refused(result, attempt, category, requested, maximum, outcome,
+             reason=None):
     """A refused wait: recorded with zero elapsed time, never slept."""
     record = _record_wait(result, attempt, category, requested, maximum,
-                          token, reason)
+                          outcome, reason)
     record["elapsed_seconds"] = 0
     return record
 
