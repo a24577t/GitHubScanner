@@ -12,7 +12,7 @@ Phase 1 — Observation. Vertical Slice 1 (Observation Collector) implemented, i
 
 ## Current Objective
 
-Implement Vertical Slice 2 — Repository Configuration Collector — per the approved specification (tasks T1–T10, dependency order). T1 complete and merged (PR #38, merge commit `50aa3e7`); the next ticket, T2 (`taxonomy.py` extraction), begins only with explicit repository-owner authorization. The GHAS governance rollout decision pack (wayfinder map, [issue #1](https://github.com/a24577t/GitHubScanner/issues/1)) remains the standing planning objective — discovery frontier tickets #2–#6 open.
+Implement Vertical Slice 2 — Repository Configuration Collector — per the approved specification (tasks T1–T10, dependency order). T1 and T2 complete and merged (T1: PR #38, `50aa3e7`; T2: PR #40, `96c694a`); the next ticket, T3 (`transport.py` waits per ADR-0007), begins only with explicit repository-owner authorization. The GHAS governance rollout decision pack (wayfinder map, [issue #1](https://github.com/a24577t/GitHubScanner/issues/1)) remains the standing planning objective — discovery frontier tickets #2–#6 open.
 
 ## Completed Work Items
 
@@ -24,6 +24,8 @@ Implement Vertical Slice 2 — Repository Configuration Collector — per the ap
 - **Methodology Release v0.2.0 closeout** (PRs #31, #32, #33, #35): MADR-0003 accepted; transfer architecture accepted — Observer and Review Evidence Package (REP) recorded as Architecture Accepted / Implementation Deferred under [issue #34](https://github.com/a24577t/GitHubScanner/issues/34); Decision-Gated Implementation Lifecycle ratified; Observer added to the controlled vocabulary; Collaboration Avatar regenerated through the readiness gate; GHAS SKU research evidence preserved under `docs/research/`.
 
 - **Slice 2 T1 — descriptor table + `default-branch-protection` projection** (PR #38, merged `50aa3e7`; Quality Gate PASS, owner-recorded 2026-07-26; merge approved without code changes): `resources.py` declarative descriptor table with import-time integrity validation and pure projection interpreter, per the approved specification's module table; evidence: red-first TDD record (four cycles, preserved in the ticket commit message), 21 new behavioral tests at the ratified seams, validation on merged main 63/63 tests OK (zero regressions), diff scoped to the task (two new files, both ≤300 lines).
+
+- **Slice 2 T2 — classification extracted into `taxonomy.py`** (PR #40, merged `96c694a`; Quality Gate PASS, owner-recorded 2026-07-26; merge approved without code changes): descriptor-anchored absence matching and the closed deterministic-reason set now owned by the pure `taxonomy.py`; `derive.py` retains evidence loading and invocation only; evidence: red-first TDD record (four cycles, in the ticket commit message), matrix rows V13–V20 covered at the classify seam, S10 three-axis review (Standards: two judgement calls dispositioned to T6; Spec: complete; Conformance: clean), validation on merged main 78/78 tests OK (zero regressions; the 42 Slice-1 CLI tests pass unchanged).
 
 ## Architecture
 
