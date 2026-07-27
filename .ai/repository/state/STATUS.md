@@ -12,7 +12,7 @@ Phase 1 — Observation. Vertical Slice 1 (Observation Collector) implemented, i
 
 ## Current Objective
 
-Implement Vertical Slice 2 — Repository Configuration Collector — per the approved specification (tasks T1–T10, dependency order). Slice 2 implementation has not yet begun. The GHAS governance rollout decision pack (wayfinder map, [issue #1](https://github.com/a24577t/GitHubScanner/issues/1)) remains the standing planning objective — discovery frontier tickets #2–#6 open.
+Implement Vertical Slice 2 — Repository Configuration Collector — per the approved specification (tasks T1–T10, dependency order). T1 complete and merged (PR #38, merge commit `50aa3e7`); the next ticket, T2 (`taxonomy.py` extraction), begins only with explicit repository-owner authorization. The GHAS governance rollout decision pack (wayfinder map, [issue #1](https://github.com/a24577t/GitHubScanner/issues/1)) remains the standing planning objective — discovery frontier tickets #2–#6 open.
 
 ## Completed Work Items
 
@@ -22,6 +22,8 @@ Implement Vertical Slice 2 — Repository Configuration Collector — per the ap
 - **Slice 2 architecture accepted** (⟦G-Accept⟧, PR #25 merged `b346159`): ADRs 0004–0007 accepted; Vertical Slice 2 specification and normative validation matrix approved (architecture grill, 2026-07-26; consolidation by `to-spec-repo-owner`); acceptance closeout created future-work issues #26–#28 (Observation Target Model; `security_and_analysis` projection; per-ruleset detail).
 - **`.ai` information-architecture migration** (PR #29, merged `872544e`; approved design 2026-07-26): audience/ownership namespaces `collaborator/`, `repository-owner/`, `repository/{methodology, state, history}`; history package `ia-redesign-2026-07` with exact legacy snapshot — **immutable as of the merge**, per its recorded boundary (the merge SHA is deliberately not embedded in the package; its README documents the self-reference convention); two dead files and one superseded draft removed (evidence in the package); all references updated atomically; post-merge validation 42/42 tests OK.
 - **Methodology Release v0.2.0 closeout** (PRs #31, #32, #33, #35): MADR-0003 accepted; transfer architecture accepted — Observer and Review Evidence Package (REP) recorded as Architecture Accepted / Implementation Deferred under [issue #34](https://github.com/a24577t/GitHubScanner/issues/34); Decision-Gated Implementation Lifecycle ratified; Observer added to the controlled vocabulary; Collaboration Avatar regenerated through the readiness gate; GHAS SKU research evidence preserved under `docs/research/`.
+
+- **Slice 2 T1 — descriptor table + `default-branch-protection` projection** (PR #38, merged `50aa3e7`; Quality Gate PASS, owner-recorded 2026-07-26; merge approved without code changes): `resources.py` declarative descriptor table with import-time integrity validation and pure projection interpreter, per the approved specification's module table; evidence: red-first TDD record (four cycles, preserved in the ticket commit message), 21 new behavioral tests at the ratified seams, validation on merged main 63/63 tests OK (zero regressions), diff scoped to the task (two new files, both ≤300 lines).
 
 ## Architecture
 
