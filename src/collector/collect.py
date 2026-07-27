@@ -1,6 +1,7 @@
 """Collection flow: authenticate, gather evidence for one organization, persist."""
 import datetime
 import json
+import sys
 from pathlib import Path
 
 from collector import derive, report, resources, targets, transport
@@ -88,8 +89,16 @@ def _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
             if "default_branch" in inputs:
                 extra["branch"] = inputs["default_branch"]
             result = transport.get(api_url, path, token)
-            write_canonical(repo_dir / f"{descriptor['name']}.json",
-                            _record(result, run_id, **extra))
+            try:
+                write_canonical(repo_dir / f"{descriptor['name']}.json",
+                                _record(result, run_id, **extra))
+            except OSError as err:
+                # Collection model 6: a path-creation/write failure is a
+                # collection failure, never a crash — surfaced loudly, the
+                # run frame is not re-evaluated, and fan-out continues.
+                print(f"collector: collection failure: "
+                      f"{target['id']}/{descriptor['name']}: {err}",
+                      file=sys.stderr)
 
 
 def _prepare_out_dir(out_dir):

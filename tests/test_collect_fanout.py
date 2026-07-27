@@ -180,5 +180,67 @@ class IneligibleItems(unittest.TestCase):
             self.assertEqual(observed["count"], 3)
 
 
+class OrderlyContinuation(unittest.TestCase):
+    def test_transport_failure_on_one_repo_resource_never_stops_the_run(self):
+        script = org_script(
+            [repo(1), repo(2)],
+            **{protection_path(1): [response(500, {"message": "boom"})],
+               protection_path(2): [response(200, PROTECTION_BODY)]},
+        )
+        with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = collect(base, out, ["--run-id", RUN_ID])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            raw = out / "evidence" / "raw" / RUN_ID / "repos"
+            failed = json.loads(
+                (raw / "1-repo-1" / "default-branch-protection.json")
+                .read_text(encoding="utf-8")
+            )
+            # The failure is itself evidence: persisted verbatim with the
+            # bounded-retry attempt count (ADR-0007).
+            self.assertEqual(failed["envelope"]["status"], 500)
+            self.assertEqual(failed["envelope"]["attempts"], 3)
+            ok = json.loads(
+                (raw / "2-repo-2" / "default-branch-protection.json")
+                .read_text(encoding="utf-8")
+            )
+            self.assertEqual(ok["envelope"]["status"], 200)
+
+    def test_write_failure_is_a_collection_failure_never_a_crash(self):
+        # Collection model 6: filesystem path-creation failures are collection
+        # failures, not crashes — surfaced, and the run continues.
+        import contextlib
+        import io
+        import unittest.mock as mock
+
+        from collector import collect as collect_module
+        from collector.serialize import write_canonical as real_write
+
+        def failing_write(path, obj):
+            if "1-repo-1" in str(path):
+                raise OSError("simulated path-creation failure")
+            return real_write(path, obj)
+
+        script = org_script(
+            [repo(1), repo(2)],
+            **{protection_path(1): [response(200, PROTECTION_BODY)],
+               protection_path(2): [response(200, PROTECTION_BODY)]},
+        )
+        with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            stderr = io.StringIO()
+            with mock.patch.object(collect_module, "write_canonical",
+                                   side_effect=failing_write), \
+                    contextlib.redirect_stderr(stderr):
+                code = collect_module.run_collect(
+                    base, "acme", out, "tok-inproc", run_id=RUN_ID)
+            self.assertEqual(code, 0)
+            files = raw_files(out)
+            self.assertNotIn("repos/1-repo-1/default-branch-protection.json", files)
+            self.assertIn("repos/2-repo-2/default-branch-protection.json", files)
+            self.assertIn("collection failure", stderr.getvalue())
+            self.assertIn("simulated path-creation failure", stderr.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
