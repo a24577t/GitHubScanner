@@ -92,6 +92,11 @@ behavior pinned by the validation run). An empty listing is `collected` with
    re-evaluated during fan-out. Filesystem path-creation failures are recorded
    collection failures, not crashes.
 
+**Required-input usability (ratified refinement, E1, 2026-07-26):** a required
+descriptor input is usable only when it is a non-empty string; `None`, empty
+strings, and non-string values are missing. Degenerate values are never
+coerced, repaired, or used to fabricate request paths.
+
 ## Artifact layout
 
 ```
@@ -114,6 +119,13 @@ matches `^[A-Za-z0-9_.-]{1,100}$` and does not end with `.`; otherwise the
 directory is `<repo-id>` alone. Maximum assumed annotation length: 100.
 Operators should prefer a shallow `--out` and enable long-path support on
 Windows; portability of arbitrary output roots is not guaranteed.
+
+**Unrecognized-directory reporting (ratified refinement, E1, 2026-07-26):**
+directory names the scanner could not have written are surfaced through
+`unrecognized_directories` reporting. This is reporting, never a third
+structural-conflict class: ADR-0005's conflict classes remain limited to
+(1) duplicate-ID directories and (2) path/envelope repository-ID
+disagreement. T6 inherits this distinction.
 
 Observed per-resource files: top level `{run_id, state, coverage, repositories}`.
 `coverage` = `{"basis": "eligible-discovered-repositories", "inventory_state":
