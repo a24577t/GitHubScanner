@@ -82,3 +82,54 @@ def directory_key(repo_id, name):
     if isinstance(name, str) and _ANNOTATION.match(name) and not name.endswith("."):
         return f"{repo_id}-{name}"
     return str(repo_id)
+
+
+# --- Structural validation -------------------------------------------------
+# Paths may be examined for storage addressing and structural validation, but
+# never used as the authoritative source of an observed GitHub fact.
+
+# The scanner writes IDs as canonical positive integers, so a recognized
+# directory is <digits-without-leading-zero>[-<annotation>].
+_DIRECTORY = re.compile(r"^([1-9][0-9]*)(?:-(.+))?$")
+
+
+def claimed_repository_id(directory_name):
+    """The repository ID a directory name claims, or None if unrecognized.
+
+    The annotation never participates in the claim.
+    """
+    match = _DIRECTORY.match(directory_name)
+    return int(match.group(1)) if match else None
+
+
+def structural_conflicts(claims):
+    """Detect structural evidence conflicts (ADR-0005) deterministically.
+
+    ``claims`` is an iterable of ``(directory_name, envelope_repository_ids)``
+    pairs — the enclosed envelopes' repository IDs as found, unrepaired.
+    Duplicate directory claims on one ID and any path/envelope disagreement
+    are conflicts: no winner is selected, nothing deduplicates silently, and
+    every affected directory is reported so no affected evidence can surface
+    as an apparently valid observation.
+    """
+    directories_by_id, mismatched, unrecognized = {}, [], []
+    for directory_name, envelope_ids in claims:
+        claimed = claimed_repository_id(directory_name)
+        if claimed is None:
+            unrecognized.append(directory_name)
+            continue
+        directories_by_id.setdefault(claimed, []).append(directory_name)
+        if any(envelope_id != claimed for envelope_id in envelope_ids):
+            mismatched.append(directory_name)
+    duplicate_ids = tuple(sorted(
+        repo_id for repo_id, dirs in directories_by_id.items() if len(dirs) > 1
+    ))
+    conflicted = set(mismatched)
+    for repo_id in duplicate_ids:
+        conflicted.update(directories_by_id[repo_id])
+    return {
+        "duplicate_ids": duplicate_ids,
+        "mismatched_directories": tuple(sorted(mismatched)),
+        "unrecognized_directories": tuple(sorted(unrecognized)),
+        "conflicted_directories": tuple(sorted(conflicted)),
+    }

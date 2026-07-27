@@ -139,5 +139,62 @@ class Addressing(unittest.TestCase):
         self.assertEqual((values, missing), ({"default_branch": "main"}, ()))
 
 
+class DirectoryClaims(unittest.TestCase):
+    def test_directory_names_claim_their_leading_repository_id(self):
+        for dirname, expected in (("42", 42), ("42-name", 42),
+                                  ("9034-2nd-repo", 9034), ("7-a.b_c", 7)):
+            with self.subTest(dirname=dirname):
+                self.assertEqual(targets.claimed_repository_id(dirname), expected)
+
+    def test_unrecognized_directory_names_claim_nothing(self):
+        for dirname in ("junk", "042-x", "42-", "-42", "0", "4 2", "42x", ""):
+            with self.subTest(dirname=dirname):
+                self.assertIsNone(targets.claimed_repository_id(dirname))
+
+
+def conflicts(*claims):
+    return targets.structural_conflicts(claims)
+
+
+class StructuralValidation(unittest.TestCase):
+    def test_clean_claims_report_no_conflicts(self):
+        report = conflicts(("4", (4, 4)), ("9-name", (9,)), ("7", ()))
+        self.assertEqual(report, {
+            "duplicate_ids": (),
+            "mismatched_directories": (),
+            "unrecognized_directories": (),
+            "conflicted_directories": (),
+        })
+
+    def test_duplicate_id_directories_are_a_structural_conflict(self):
+        # V34: more than one directory claiming one repository ID — no
+        # winner is selected and nothing deduplicates silently.
+        report = conflicts(("42", (42,)), ("42-name", (42,)), ("7", (7,)))
+        self.assertEqual(report["duplicate_ids"], (42,))
+        self.assertEqual(report["conflicted_directories"], ("42", "42-name"))
+
+    def test_path_envelope_id_disagreement_is_a_structural_conflict(self):
+        # V35: path text never overrides envelope content; the directory's
+        # evidence never surfaces as an apparently valid observation.
+        report = conflicts(("42", (42, 43)), ("7", (7,)))
+        self.assertEqual(report["mismatched_directories"], ("42",))
+        self.assertEqual(report["conflicted_directories"], ("42",))
+
+    def test_missing_envelope_identity_cannot_corroborate_the_path(self):
+        report = conflicts(("42", (None,)))
+        self.assertEqual(report["mismatched_directories"], ("42",))
+
+    def test_unrecognized_directories_are_surfaced_never_ignored(self):
+        report = conflicts(("junk", (42,)), ("4", (4,)))
+        self.assertEqual(report["unrecognized_directories"], ("junk",))
+        self.assertEqual(report["conflicted_directories"], ())
+
+    def test_report_is_deterministic_and_sorted(self):
+        report = conflicts(("9-b", (9,)), ("9-a", (9,)), ("42", (1,)))
+        self.assertEqual(report["duplicate_ids"], (9,))
+        self.assertEqual(report["mismatched_directories"], ("42",))
+        self.assertEqual(report["conflicted_directories"], ("42", "9-a", "9-b"))
+
+
 if __name__ == "__main__":
     unittest.main()
