@@ -67,6 +67,17 @@ def _page_records(pages, complete, run_id, **extra):
     return records
 
 
+def _persist(path, record, target, descriptor):
+    try:
+        write_canonical(path, record)
+    except OSError as err:
+        # Collection model 6: a path-creation/write failure is a collection
+        # failure, never a crash — surfaced loudly, the run frame is not
+        # re-evaluated, and fan-out continues.
+        print(f"collector: collection failure: "
+              f"{target['id']}/{descriptor['name']}: {err}", file=sys.stderr)
+
+
 def _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
                             max_pages):
     """Fan-out stage (ADR-0004/0005): canonical targets in ascending id order,
@@ -88,17 +99,20 @@ def _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
                      "resource": descriptor["name"]}
             if "default_branch" in inputs:
                 extra["branch"] = inputs["default_branch"]
+            if descriptor["shape"] == "object_array":
+                # A paginated listing drain, capped independently per listing
+                # by --max-pages (CLI contract; a breach marks incomplete).
+                pages, complete = transport.paginate(
+                    api_url, path, token, max_pages=max_pages)
+                for record in _page_records(pages, complete, run_id, **extra):
+                    number = record["envelope"]["page"]
+                    _persist(
+                        repo_dir / f"{descriptor['name']}.page-{number}.json",
+                        record, target, descriptor)
+                continue
             result = transport.get(api_url, path, token)
-            try:
-                write_canonical(repo_dir / f"{descriptor['name']}.json",
-                                _record(result, run_id, **extra))
-            except OSError as err:
-                # Collection model 6: a path-creation/write failure is a
-                # collection failure, never a crash — surfaced loudly, the
-                # run frame is not re-evaluated, and fan-out continues.
-                print(f"collector: collection failure: "
-                      f"{target['id']}/{descriptor['name']}: {err}",
-                      file=sys.stderr)
+            _persist(repo_dir / f"{descriptor['name']}.json",
+                     _record(result, run_id, **extra), target, descriptor)
 
 
 def _prepare_out_dir(out_dir):

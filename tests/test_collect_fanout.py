@@ -242,5 +242,32 @@ class OrderlyContinuation(unittest.TestCase):
             self.assertIn("simulated path-creation failure", stderr.getvalue())
 
 
+class TokenSecrecyOverFanoutArtifacts(unittest.TestCase):
+    def test_token_appears_in_no_new_artifact_or_output(self):
+        from test_collect import TOKEN
+
+        script = org_script(
+            [repo(1), repo(2)],
+            **{protection_path(1): [response(200, PROTECTION_BODY)],
+               protection_path(2): [response(404, ABSENCE_BODY)]},
+        )
+        with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = collect(base, out, ["--run-id", RUN_ID])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            token_bytes = TOKEN.encode("utf-8")
+            scanned = 0
+            for artifact in sorted(out.rglob("*")):
+                if artifact.is_file():
+                    scanned += 1
+                    self.assertNotIn(token_bytes, artifact.read_bytes(),
+                                     f"token leaked into {artifact}")
+            fanout = [p for p in out.rglob("repos/*/*.json")]
+            self.assertEqual(len(fanout), 2, "both fan-out artifacts scanned")
+            self.assertGreater(scanned, len(fanout))
+            self.assertNotIn(TOKEN, result.stdout)
+            self.assertNotIn(TOKEN, result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
