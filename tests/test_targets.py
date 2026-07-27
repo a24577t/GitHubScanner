@@ -1,8 +1,11 @@
-"""Canonical target discovery contract (Slice 2 T4, ADR-0005; rows V31-V33)."""
+"""Canonical target discovery contract (Slice 2 T4, ADR-0005; rows V31-V38)."""
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from collector import resources, targets
+from collector.serialize import write_canonical
 
 PROTECTION = resources.DEFAULT_BRANCH_PROTECTION
 
@@ -194,6 +197,57 @@ class StructuralValidation(unittest.TestCase):
         self.assertEqual(report["duplicate_ids"], (9,))
         self.assertEqual(report["mismatched_directories"], ("42",))
         self.assertEqual(report["conflicted_directories"], ("42", "9-a", "9-b"))
+
+
+class DiscoveryEquivalence(unittest.TestCase):
+    def test_collection_plan_equals_offline_rederivation(self):
+        # V38: one canonical rule — the in-memory records collection planning
+        # sees and the same records persisted then reloaded from raw evidence
+        # yield the identical ordered target set.
+        records = [
+            page([item(9, "o/nine", default_branch="main"),
+                  item(2, "o/two"), item(True, "o/bool"), item(9, "o/again")]),
+            page([item(5, "o/five", default_branch="dev"), item(3, "bad")]),
+        ]
+        planned = targets.discover_targets(records)
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_dir = Path(tmp)
+            for number, record in enumerate(records, start=1):
+                write_canonical(raw_dir / f"repos.page-{number}.json", record)
+            pages = sorted(raw_dir.glob("repos.page-*.json"),
+                           key=lambda p: int(p.stem.split("-")[-1]))
+            reloaded = [json.loads(p.read_text(encoding="utf-8")) for p in pages]
+        rederived = targets.discover_targets(reloaded)
+        self.assertEqual(planned, rederived)
+        self.assertEqual([t["id"] for t in rederived], [2, 5, 9])
+
+
+class CraftedEvidenceTree(unittest.TestCase):
+    def envelope(self, path, repo_id):
+        write_canonical(path, {"envelope": {"repo": {"id": repo_id}},
+                               "body_text": "{}"})
+
+    def test_crafted_tree_conflicts_are_detected_from_the_filesystem(self):
+        # V34/V35 fixture: duplicate-ID directories plus a path/envelope
+        # disagreement in one crafted raw evidence tree.
+        with tempfile.TemporaryDirectory() as tmp:
+            repos = Path(tmp) / "repos"
+            self.envelope(repos / "42" / "default-branch-protection.json", 42)
+            self.envelope(repos / "42-name" / "default-branch-protection.json", 42)
+            self.envelope(repos / "7" / "default-branch-protection.json", 8)
+            self.envelope(repos / "4-clean" / "default-branch-protection.json", 4)
+            claims = [
+                (directory.name,
+                 tuple(json.loads(f.read_text(encoding="utf-8"))
+                       ["envelope"].get("repo", {}).get("id")
+                       for f in sorted(directory.glob("*.json"))))
+                for directory in sorted(repos.iterdir())
+            ]
+        report = targets.structural_conflicts(claims)
+        self.assertEqual(report["duplicate_ids"], (42,))
+        self.assertEqual(report["mismatched_directories"], ("7",))
+        self.assertEqual(report["conflicted_directories"], ("42", "42-name", "7"))
+        self.assertEqual(report["unrecognized_directories"], ())
 
 
 if __name__ == "__main__":
