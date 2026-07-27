@@ -113,5 +113,72 @@ class ScaffoldExactness(unittest.TestCase):
             self.assertIn("repos/3/default-branch-protection.json", raw_files(out))
 
 
+class MissingRequiredInput(unittest.TestCase):
+    def test_v33_missing_default_branch_no_request_no_artifact(self):
+        # V33 at the T5 seam: the eligible repository stays discovered, the
+        # descriptor gets no request and no fabricated artifact; other
+        # repositories are still observed and the run stays orderly.
+        no_branch = {k: v for k, v in repo(1).items() if k != "default_branch"}
+        script = org_script(
+            [no_branch, repo(2)],
+            **{protection_path(2): [response(200, PROTECTION_BODY)]},
+        )
+        with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            result = collect(base, out, ["--run-id", RUN_ID])
+            self.assertEqual(result.returncode, 0, result.stderr)
+            fanout = [r["path"] for r in recorder.requests
+                      if "/branches/" in r["path"]]
+            self.assertEqual(fanout, [protection_path(2)])
+            files = raw_files(out)
+            self.assertNotIn("repos/1-repo-1/default-branch-protection.json", files)
+            self.assertIn("repos/2-repo-2/default-branch-protection.json", files)
+
+    def test_unusable_default_branch_values_are_missing_not_repaired(self):
+        # Ratified refinement (E1 Q2): None / empty / non-string inputs are
+        # missing — never coerced into a request path.
+        script = org_script(
+            [{**repo(1), "default_branch": ""},
+             {**repo(2), "default_branch": None}],
+        )
+        with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            self.assertEqual(
+                [r["path"] for r in recorder.requests if "/branches/" in r["path"]],
+                [],
+            )
+            self.assertEqual([f for f in raw_files(out) if f.startswith("repos/")],
+                             [])
+
+
+class IneligibleItems(unittest.TestCase):
+    def test_ineligible_inventory_items_get_no_directory_and_no_request(self):
+        # V32 consequence at the fan-out seam: ineligible items are never
+        # targets; inventory projection semantics stay untouched.
+        script = org_script(
+            [{"id": True, "name": "bool", "full_name": "acme/bool",
+              "default_branch": "main"},
+             {**repo(2), "full_name": "not-owner-name"},
+             repo(3)],
+            **{protection_path(3): [response(200, PROTECTION_BODY)]},
+        )
+        with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            self.assertEqual(collect(base, out, ["--run-id", RUN_ID]).returncode, 0)
+            self.assertEqual(
+                [r["path"] for r in recorder.requests if "/branches/" in r["path"]],
+                [protection_path(3)],
+            )
+            self.assertEqual(
+                [f for f in raw_files(out) if f.startswith("repos/")],
+                ["repos/3-repo-3/default-branch-protection.json"],
+            )
+            observed = json.loads(
+                (out / "observed" / "repositories.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(observed["count"], 3)
+
+
 if __name__ == "__main__":
     unittest.main()

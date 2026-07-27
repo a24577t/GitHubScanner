@@ -75,6 +75,11 @@ def _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
             target["id"], target["name"])
         for descriptor in resources.DESCRIPTORS:
             inputs, missing = targets.descriptor_inputs(target, descriptor)
+            if missing:
+                # ADR-0005: no request and no fabricated artifact; the
+                # resource derives unknown from the absence (T6). Other
+                # descriptors still observe this repository.
+                continue
             path = descriptor["path_template"].format(
                 full_name=target["full_name"], **inputs)
             extra = {"repo": {"id": target["id"],
