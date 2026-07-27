@@ -3,7 +3,7 @@ import datetime
 import json
 from pathlib import Path
 
-from collector import derive, report, transport
+from collector import derive, report, resources, targets, transport
 from collector.serialize import write_canonical
 
 
@@ -46,6 +46,45 @@ def _record(result, run_id, **extra):
     }
     envelope.update(extra)
     return {"envelope": envelope, "body_text": result.body_text}
+
+
+def _page_records(pages, complete, run_id, **extra):
+    """Raw records for one paginated listing drain; a capped drain marks its
+    last collected page incomplete, never truncates silently."""
+    records = []
+    for number, page in enumerate(pages, start=1):
+        try:
+            body = json.loads(page.body_text)
+        except (json.JSONDecodeError, TypeError):
+            body = None
+        items = len(body) if isinstance(body, list) else 0
+        incomplete = ((number == len(pages)) and not complete
+                      and 200 <= page.status < 300)
+        records.append(_record(page, run_id, page=number, item_count=items,
+                               **({"incomplete": True} if incomplete else {}),
+                               **extra))
+    return records
+
+
+def _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
+                            max_pages):
+    """Fan-out stage (ADR-0004/0005): canonical targets in ascending id order,
+    descriptors in table order, through the existing transport."""
+    for target in targets.discover_targets(page_records):
+        repo_dir = raw_dir / "repos" / targets.directory_key(
+            target["id"], target["name"])
+        for descriptor in resources.DESCRIPTORS:
+            inputs, missing = targets.descriptor_inputs(target, descriptor)
+            path = descriptor["path_template"].format(
+                full_name=target["full_name"], **inputs)
+            extra = {"repo": {"id": target["id"],
+                              "full_name": target["full_name"]},
+                     "resource": descriptor["name"]}
+            if "default_branch" in inputs:
+                extra["branch"] = inputs["default_branch"]
+            result = transport.get(api_url, path, token)
+            write_canonical(repo_dir / f"{descriptor['name']}.json",
+                            _record(result, run_id, **extra))
 
 
 def _prepare_out_dir(out_dir):
@@ -118,19 +157,14 @@ def run_collect(api_url, org, out_dir, token, run_id=None, max_pages=100):
     write_canonical(raw_dir / "user.json", _record(identity, run_id))
     write_canonical(raw_dir / "meta.json", _record(meta, run_id, endpoint_optional=True))
     write_canonical(raw_dir / "org.json", _record(org_result, run_id))
-    for number, page in enumerate(pages, start=1):
-        try:
-            body = json.loads(page.body_text)
-        except (json.JSONDecodeError, TypeError):
-            body = None
-        items = len(body) if isinstance(body, list) else 0
-        incomplete = ((number == len(pages)) and not listing_complete
-                      and 200 <= page.status < 300)
-        write_canonical(
-            raw_dir / f"repos.page-{number}.json",
-            _record(page, run_id, page=number, item_count=items,
-                    **({"incomplete": True} if incomplete else {})),
-        )
+    page_records = _page_records(pages, listing_complete, run_id)
+    for number, record in enumerate(page_records, start=1):
+        write_canonical(raw_dir / f"repos.page-{number}.json", record)
+
+    # Discovery consumes the exact records persisted above — the canonical
+    # rule is shared with offline rederivation (ADR-0005, V38).
+    _collect_repo_resources(api_url, token, raw_dir, run_id, page_records,
+                            max_pages)
 
     derive.derive_observed(out_dir, run_id=run_id)
     summary = derive.run_summary(out_dir, run_id)
