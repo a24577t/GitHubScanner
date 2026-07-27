@@ -143,6 +143,14 @@ and failed logical requests; primary-park count and seconds; Retry-After wait
 count and seconds; other retry-wait count and seconds; maximum single wait;
 first and last capture timestamps; wait-bound termination counts and reasons.
 
+**Wait-termination evidence vocabulary (ratified refinement, E1, 2026-07-26):**
+a parked logical request that again affirmatively reports primary exhaustion
+terminates with structured-result `termination_reason`
+`rate_limit_renewed_exhaustion` and primary-park wait-record `outcome`
+`renewed-exhaustion`. Both tokens are transport wait-evidence vocabulary only;
+neither joins the derived-entry closed reason set. T6 remains responsible for
+mapping transport termination into derived-entry classification.
+
 ## Module structure
 
 | Module | Owns | Must not |
