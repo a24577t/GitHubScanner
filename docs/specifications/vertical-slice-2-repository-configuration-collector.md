@@ -153,6 +153,30 @@ Per ADR-0006. Canonical deterministic reasons (closed set for this slice):
 one. No composite per-repository state exists; a per-resource-type rollup uses
 the Slice 1 listing rule (first non-`collected` state encountered).
 
+**Derivation-evidence refinements (ratified, E1, 2026-07-29):** three
+clarifications for derived repo-resource entries. (1) The closed reason set
+gains `raw-evidence-absent`, carried exactly and only when a target's required
+inputs are present but the expected raw-evidence artifact is absent (the
+recorded-collection-failure trace; every entry when deriving a Slice-1 tree);
+the exactly-one-reason invariant is unchanged. (2) Structural evidence
+conflicts (ADR-0005) derive `unknown` · `structural-conflict`: `unknown`
+covers both insufficient trustworthy evidence and mutually conflicting
+evidence that prevents selecting a valid observation; `structural-conflict`
+remains limited to evidence-integrity conflicts. (3) Transport termination
+maps to derived classification deterministically from retained evidence only
+(envelope status, allowlisted rate-limit headers, `captured_at`): a final
+record carrying affirmative rate-limit markers (status 429, or 403 with a
+`retry-after` header or `x-ratelimit-remaining` of zero) derives `failed` with
+reason `retry-after-exceeds-maximum` when Retry-After is parseable and exceeds
+its maximum, else `rate_limit_reset_exceeds_maximum_park` when remaining is
+zero with a parseable reset whose computed park (`max(0, reset −
+captured_at_epoch) + slack`) exceeds the maximum park, else
+`unusable-rate-limit-reset` when remaining is zero with a missing or
+unparseable reset, else `transport-failed` (markers within bounds: attempts or
+renewed-exhaustion terminated). Markerless 401/403 remain `inaccessible` ·
+`authorization-denied`; other non-2xx transport outcomes remain `failed` ·
+`transport-failed`.
+
 ## Transport and waits
 
 Per ADR-0007. Slice 2 constants (proposed values — owner review):
