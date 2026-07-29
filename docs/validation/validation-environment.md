@@ -8,6 +8,16 @@ A minimal, manually-managed GitHub organization used as the live validation targ
 - **Content policy:** synthetic and public-by-default. The organization holds nothing sensitive; every repository is treated as public regardless of visibility, because committed run evidence names the organization, its inventory, and the authenticated identity.
 - **Disposability:** this document must remain sufficient to rebuild an equivalent organization under any name from scratch. If rebuilding from this document is cheap, the environment stays disposable and drift loses its teeth.
 
+## GHAS trial organization (reconnaissance target)
+
+> **Synthetic test values — workflow validation only.** Recorded 2026-07-29 to validate the repository's reconnaissance-planning workflow; not operational production configuration. An owner-authorized update replaces them when a real trial is activated; trial-dependent work is blocked until then.
+
+- **Name:** `GHScannerLab-Trial` (github.com; a separate organization from `GHScannerLab`; GHAS trial).
+- **Absolute trial expiry date:** 2026-08-28 — an environment property: trial-dependent conditional validation (e.g., V12 organization-ruleset behavioral parent exclusion) completes before this date or resolves as a recorded limitation per the Slice 2 specification.
+- **Role:** target for owner-authorized bounded live reconnaissance runs and trial-dependent conditional validation only, per the live-run classes clarification (Slice 2 specification, Validation section) and the ratified bounds in [issue #47](https://github.com/a24577t/GitHubScanner/issues/47). Reconnaissance evidence never accepts a validation-matrix row.
+- **Credentials:** same discipline as validation runs — documentation-first provisioning; no silent credential-type substitution, no permission broadening, and no reduction of required validation coverage; divergences recorded and grade-marked.
+- **Content policy and disposability:** as for `GHScannerLab` — synthetic, public-by-default, rebuildable from this document.
+
 ## Repository inventory
 
 | Repository | Purpose | Visibility | Plan requirement | Expected observed values | Introduced |

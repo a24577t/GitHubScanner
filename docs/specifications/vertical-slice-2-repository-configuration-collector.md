@@ -201,6 +201,24 @@ expected response class, raw evidence, taxonomy state, deterministic reason,
 projection, report effect, and status. A successful live run is never evidence
 for offline-only rows.
 
+**Live-run classes and evidence authority (ratified clarification,
+2026-07-29):** two live run classes exist: the validation run (T9) and
+reconnaissance runs — owner-authorized, bounded, read-only, executed from
+merged `main` at a pinned SHA, under the same credential discipline as the
+validation run (documentation-first provisioning; no silent credential-type
+substitution, no permission broadening, and no reduction of required
+validation coverage; divergences recorded). Matrix-row acceptance occurs only
+at the T9 validation run; no earlier evidence, live or committed, accepts any
+row. All pinning of live-observed values — the absence message ("re-pinned by
+each validation run"), parameter behavior ("pinned by the validation run"),
+and response classes ("pinned by run", V03) — is validation-run authority
+exclusively; reconnaissance runs never pin or re-pin, and any observed
+divergence from a pinned value routes through halt-don't-decide to
+owner-ratified review per ADR-0006's taxonomy-classification-change rule.
+Every committed run record declares its grade (`reconnaissance` or
+`validation`); reconnaissance records carry the non-acceptance statement
+inline, including any credential observations they record.
+
 **Fixtures (GHScannerLab; owner-provisioned before the run; scanner is
 read-only):** `standard-repo` (protected default branch: one required approving
 review; one repository-owned ruleset), `unprotected-repo` (new; active, has
@@ -256,7 +274,11 @@ conditionally unvalidated, and revisit via wayfinder tickets #2/#3.
   diff touches only `resources.py`, tests, and fixtures** — zero changes to
   `collect.py`, `derive.py` engine code, `targets.py`, `taxonomy.py`,
   `transport.py`, `report.py`; failure returns the design to review. Functional
-  AC: V06–V07, V11, V37.
+  AC: V06–V07, V11, V37. **Test-plan notes (carried from the T5 Quality Gate,
+  2026-07-29; planning notes, not T5 defects):** (1) dedicated coexistence
+  coverage for multiple descriptors on a repository missing one descriptor's
+  required input; (2) an explicit object-envelope assertion that list-only
+  fields are absent.
 - **T9 — Fixtures + live validation run:** owner provisions fixtures and PATs
   per this spec; run `collect` + `derive`; commit the self-contained tree under
   `docs/validation/runs/`; update `validation-environment.md` (inventory,
