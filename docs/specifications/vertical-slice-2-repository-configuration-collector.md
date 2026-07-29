@@ -105,6 +105,23 @@ descriptor input is usable only when it is a non-empty string; `None`, empty
 strings, and non-string values are missing. Degenerate values are never
 coerced, repaired, or used to fabricate request paths.
 
+**Envelope transport-evidence retention (ratified refinement, E1, 2026-07-29):**
+raw collection envelopes may retain two additional allowlisted
+transport-evidence fields. The refinement is additive and exists solely to make
+V30's report visibility derivable from retained evidence; it preserves V40
+compatibility and token secrecy, and introduces no new taxonomy semantics —
+the derived-entry closed reason set and the E1-Q3 transport-termination
+mapping are unchanged.
+
+1. `wait_records` — the already-ratified closed 10-field wait-record schema,
+   preserved exactly in the order transport produced the records; the records'
+   `rate_limit_headers` never exceed the existing response-header allowlist.
+   Absent in pre-refinement evidence trees and read as an empty list.
+2. `termination_reason` — the structured transport result's wait-bound
+   termination reason, retained only when one exists; never synthesized for
+   successful completion. Readers treat legacy absence and an explicit null
+   equivalently.
+
 ## Artifact layout
 
 ```
