@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from collector import projections, resources
+from collector import projections, resources, summary
 from collector.serialize import write_canonical
 from collector.taxonomy import body_of, classify, usable_page
 
@@ -101,6 +101,7 @@ def run_summary(out_dir, run_id):
                                      resource_states["repositories"],
                                      projections.conflicted_ids(structural)),
         "structural": {key: list(value) for key, value in structural.items()},
+        "execution": summary.execution_summary(raw_dir, page_records),
     }
 
 
