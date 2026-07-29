@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+from collector import projections, resources
 from collector.serialize import write_canonical
 from collector.taxonomy import body_of, classify, shape_ok
 
@@ -114,9 +115,9 @@ def derive_observed(out_dir, run_id=None):
 
     pages = sorted(raw_dir.glob("repos.page-*.json"),
                    key=lambda p: int(p.stem.split("-")[-1]))
+    page_records = [json.loads(p.read_text(encoding="utf-8")) for p in pages]
     repos, listing_state = [], "unknown"
-    for page_path in pages:
-        record = json.loads(page_path.read_text(encoding="utf-8"))
+    for record in page_records:
         page_state, _ = classify(record, shape="object_array",
                                  absence_message=ABSENCE_MESSAGE)
         if listing_state in ("unknown", "collected"):
@@ -136,4 +137,10 @@ def derive_observed(out_dir, run_id=None):
         {"count": len(repos), "repositories": repos,
          "run_id": run_id, "state": listing_state},
     )
+    for descriptor in resources.DESCRIPTORS:
+        write_canonical(
+            out_dir / "observed" / (descriptor["name"] + ".json"),
+            projections.resource_document(run_id, raw_dir, descriptor,
+                                          page_records, listing_state),
+        )
     return run_id

@@ -54,3 +54,14 @@ def classify(record, shape=None, absence_message=None):
             return "unsupported", None
         return "inaccessible", "absence-rule-unmatched-404"
     return "failed", "transport-failed"
+
+
+def classify_resource(record, descriptor):
+    """Classify a repo-resource record against its descriptor (ADR-0006).
+
+    Absence anchors to the descriptor's pinned message; repo-resource records
+    are never endpoint-optional this slice, so Slice 1 org-resource behavior
+    is untouched.
+    """
+    return classify(record, shape=descriptor["shape"],
+                    absence_message=descriptor.get("absence_message"))
