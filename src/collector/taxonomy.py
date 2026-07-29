@@ -28,6 +28,14 @@ def shape_ok(body, shape):
     return True
 
 
+def usable_page(record):
+    """A shape-valid 2xx listing page — the only kind whose items feed
+    discovery and projection (ADR-0005); capped pages remain usable."""
+    return (record is not None
+            and 200 <= record["envelope"]["status"] < 300
+            and shape_ok(body_of(record), "object_array"))
+
+
 def classify(record, shape=None, absence_message=None):
     """Classify a raw record per ADR-0002; absence anchored per ADR-0006."""
     if record is None:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from collector import projections, resources
 from collector.serialize import write_canonical
-from collector.taxonomy import body_of, classify, shape_ok
+from collector.taxonomy import body_of, classify, usable_page
 
 ORG_FIELDS = ("login", "id", "created_at")
 REPO_FIELDS = (
@@ -122,13 +122,12 @@ def derive_observed(out_dir, run_id=None):
                                  absence_message=ABSENCE_MESSAGE)
         if listing_state in ("unknown", "collected"):
             listing_state = page_state
-        body = body_of(record)
-        status = record["envelope"]["status"]
-        if 200 <= status < 300 and shape_ok(body, "object_array"):
+        if usable_page(record):
             # collected and incomplete pages both carry valid partial evidence;
             # shape-invalid pages contribute nothing.
             repos.extend(
-                {**_pick(item, REPO_FIELDS), "state": "collected"} for item in body
+                {**_pick(item, REPO_FIELDS), "state": "collected"}
+                for item in body_of(record)
             )
     repos.sort(key=lambda item: (not isinstance(item["id"], int), str(item["id"])
                                  if not isinstance(item["id"], int) else item["id"]))
