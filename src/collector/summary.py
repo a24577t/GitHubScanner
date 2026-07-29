@@ -17,6 +17,14 @@ REFUSED_OUTCOMES = frozenset({"retry-after-exceeds-maximum",
 SINGLE_ARTIFACTS = ("user.json", "meta.json", "org.json")
 
 
+def _number(value):
+    """A retained numeric figure, or 0 — scan tolerance is type-deep: junk
+    values contribute nothing and never derail derivation."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value
+    return 0
+
+
 def _tree_envelopes(raw_dir):
     """Envelopes of the run as found (scan tolerance, per T6 scan rules)."""
     artifacts = [raw_dir / name for name in SINGLE_ARTIFACTS]
@@ -79,7 +87,8 @@ def execution_summary(raw_dir, page_records):
         reason = envelope.get("termination_reason")
         if reason is not None:
             terminations[reason] = terminations.get(reason, 0) + 1
-        for record in envelope.get("wait_records", []):
+        records = envelope.get("wait_records")
+        for record in (records if isinstance(records, list) else []):
             # Closed ratified vocabularies gate every figure; anything else
             # is junk the scanner could not have written and is skipped per
             # the T6 scan-tolerance rule — never counted, never a crash.
@@ -91,20 +100,20 @@ def execution_summary(raw_dir, page_records):
             bucket = waits.get(record.get("category"))
             if record.get("outcome") not in SLEPT_OUTCOMES or bucket is None:
                 continue
-            requested = record.get("requested_seconds") or 0
+            requested = _number(record.get("requested_seconds"))
             bucket["count"] += 1
             bucket["requested_seconds"] += requested
-            bucket["slept_seconds"] += record.get("elapsed_seconds") or 0
+            bucket["slept_seconds"] += _number(record.get("elapsed_seconds"))
             singles_max = max(singles_max, requested)
-    captured = sorted(envelope["captured_at"] for envelope in envelopes
-                      if envelope.get("captured_at"))
+    captured = sorted(envelope.get("captured_at") for envelope in envelopes
+                      if isinstance(envelope.get("captured_at"), str))
     return {
         "requests": {
             "planned_singles": planned_singles,
             "planned_drains": planned_drains,
             "missing_input": missing_input,
             "retained_records": len(envelopes),
-            "attempts": sum(e.get("attempts", 0) for e in envelopes),
+            "attempts": sum(_number(e.get("attempts")) for e in envelopes),
             "completed": len(envelopes) - failed,
             "failed": failed,
             "evidence_absent": absent,

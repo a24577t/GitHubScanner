@@ -95,6 +95,36 @@ class WaitVisibility(unittest.TestCase):
             self.assertEqual(block["terminations"], {})
 
 
+class ScanTolerance(unittest.TestCase):
+    def test_crafted_junk_types_never_derail_aggregation(self):
+        # Scan tolerance is type-deep, not vocabulary-only: junk the scanner
+        # could not have written is skipped, never counted, never a crash.
+        junk = record(200, PROTECTION_BODY, wait_records=[
+            {"category": "retry", "outcome": "retried",
+             "requested_seconds": "abc", "elapsed_seconds": None},
+            "not-a-record",
+        ])
+        junk["envelope"]["attempts"] = "three"
+        junk["envelope"]["captured_at"] = 12345
+        not_a_list = record(200, PROTECTION_BODY, wait_records=7)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1), repo_item(2)])],
+                       [("1-repo-1", "default-branch-protection.json", junk),
+                        ("2-repo-2", "default-branch-protection.json",
+                         not_a_list)])
+            block = execution(out)
+            retry = block["waits"]["retry"]
+            self.assertEqual(retry["count"], 1)
+            self.assertEqual(retry["requested_seconds"], 0)
+            self.assertEqual(retry["slept_seconds"], 0)
+            self.assertEqual(block["requests"]["attempts"], 5)
+            self.assertEqual(block["captured"]["first"],
+                             "2026-01-01T00:00:00Z")
+            self.assertEqual(block["captured"]["last"],
+                             "2026-01-01T00:00:00Z")
+
+
 class PlannedVersusAttempts(unittest.TestCase):
     def test_planned_attempts_completed_failed_evidence_absent(self):
         with tempfile.TemporaryDirectory() as tmp:
