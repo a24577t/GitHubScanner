@@ -92,6 +92,14 @@ behavior pinned by the validation run). An empty listing is `collected` with
    re-evaluated during fan-out. Filesystem path-creation failures are recorded
    collection failures, not crashes.
 
+**Collection-failure recording (ratified clarification, E1, 2026-07-27):** in
+item 6, "recorded collection failures, not crashes" means the failure is
+surfaced loudly at run time and collection continues with later work; no
+synthetic or fabricated raw-evidence artifact is created; the expected
+artifact remains absent, and that absence is the durable repository trace,
+from which T6 may derive `unknown`. This clarifies the existing layout and
+evidence rules; it is not a new failure-artifact design.
+
 **Required-input usability (ratified refinement, E1, 2026-07-26):** a required
 descriptor input is usable only when it is a non-empty string; `None`, empty
 strings, and non-string values are missing. Degenerate values are never
