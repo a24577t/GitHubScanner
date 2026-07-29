@@ -6,6 +6,8 @@ terminations from retained termination_reason, planned requests from
 retained inventory via canonical discovery. Legacy trees without the E1
 retention fields read as empty — never repaired.
 """
+import math
+
 from collector import resources, targets
 from collector.projections import scan_envelope
 from collector.transport import rate_limited
@@ -20,7 +22,8 @@ SINGLE_ARTIFACTS = ("user.json", "meta.json", "org.json")
 def _number(value):
     """A retained numeric figure, or 0 — scan tolerance is type-deep: junk
     values contribute nothing and never derail derivation."""
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and math.isfinite(value)):
         return value
     return 0
 

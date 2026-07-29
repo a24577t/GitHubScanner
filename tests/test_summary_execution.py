@@ -102,6 +102,9 @@ class ScanTolerance(unittest.TestCase):
         junk = record(200, PROTECTION_BODY, wait_records=[
             {"category": "retry", "outcome": "retried",
              "requested_seconds": "abc", "elapsed_seconds": None},
+            {"category": "retry", "outcome": "retried",
+             "requested_seconds": float("inf"),
+             "elapsed_seconds": float("nan")},
             "not-a-record",
         ])
         junk["envelope"]["attempts"] = "three"
@@ -115,9 +118,11 @@ class ScanTolerance(unittest.TestCase):
                          not_a_list)])
             block = execution(out)
             retry = block["waits"]["retry"]
-            self.assertEqual(retry["count"], 1)
+            self.assertEqual(retry["count"], 2)
             self.assertEqual(retry["requested_seconds"], 0)
             self.assertEqual(retry["slept_seconds"], 0)
+            self.assertEqual(block["waits"]["max_single_wait_seconds"], 0)
+            self.assertEqual(block["waits"]["total_wait_seconds"], 0)
             self.assertEqual(block["requests"]["attempts"], 5)
             self.assertEqual(block["captured"]["first"],
                              "2026-01-01T00:00:00Z")
