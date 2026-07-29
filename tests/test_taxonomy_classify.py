@@ -129,6 +129,7 @@ class DenialsAndFailures(unittest.TestCase):
                 )
 
     def test_reason_vocabulary_is_the_exact_closed_set(self):
+        # raw-evidence-absent joined by ratified refinement (E1, 2026-07-29).
         self.assertEqual(
             REASONS,
             frozenset({
@@ -136,6 +137,7 @@ class DenialsAndFailures(unittest.TestCase):
                 "absence-rule-unmatched-404", "authorization-denied",
                 "shape-invalid", "transport-failed", "pagination-cap",
                 "missing-required-input", "structural-conflict",
+                "raw-evidence-absent",
                 "rate_limit_reset_exceeds_maximum_park",
                 "retry-after-exceeds-maximum", "unusable-rate-limit-reset",
             }),

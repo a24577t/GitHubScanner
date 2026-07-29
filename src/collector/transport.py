@@ -58,15 +58,17 @@ def _fetch_once(url, token):
         return FetchResult(url, 0, {}, f"transport error: {err.reason if hasattr(err, 'reason') else err}", _now())
 
 
-def _rate_limited(result):
-    if result.status == 429:
+def rate_limited(status, headers):
+    """The affirmative rate-limit marker predicate, shared with derivation:
+    429, or 403 carrying a Retry-After or zero-remaining marker."""
+    if status == 429:
         return True
-    return (result.status == 403
-            and (result.headers.get("retry-after")
-                 or result.headers.get("x-ratelimit-remaining") == "0"))
+    return (status == 403
+            and (headers.get("retry-after")
+                 or headers.get("x-ratelimit-remaining") == "0"))
 
 
-def _parse_nonnegative_int(value):
+def parse_nonnegative_int(value):
     try:
         parsed = int(str(value).strip())
     except (TypeError, ValueError):
@@ -135,21 +137,21 @@ def get(base_url, path, token, clock=SYSTEM_CLOCK):
         attempts += 1
         attempts_charged += 1
         result = _fetch_once(url, token)
-        rate_limited = _rate_limited(result)
-        if not rate_limited and result.status < 500:
+        rate_limit_marked = rate_limited(result.status, result.headers)
+        if not rate_limit_marked and result.status < 500:
             return _finish(result, attempts, waits, records, None)
         # ADR-0007: remaining is parsed, and exhaustion means exactly zero.
         remaining_zero = (
-            _parse_nonnegative_int(result.headers.get("x-ratelimit-remaining"))
+            parse_nonnegative_int(result.headers.get("x-ratelimit-remaining"))
             == 0
         )
-        reset = _parse_nonnegative_int(result.headers.get("x-ratelimit-reset"))
-        retry_after = _parse_nonnegative_int(result.headers.get("retry-after"))
+        reset = parse_nonnegative_int(result.headers.get("x-ratelimit-reset"))
+        retry_after = parse_nonnegative_int(result.headers.get("retry-after"))
         # Remaining-zero with a missing/unparseable reset: the fallback wait
         # preserves the unusable-reset evidence reason (ADR-0007).
         reason = ("unusable-rate-limit-reset"
-                  if rate_limited and remaining_zero and reset is None else None)
-        if rate_limited and retry_after is not None:
+                  if rate_limit_marked and remaining_zero and reset is None else None)
+        if rate_limit_marked and retry_after is not None:
             # Precedence 1: a valid Retry-After — bounded, never a park.
             if retry_after > RETRY_AFTER_MAX_SECONDS:
                 # Never clamped, never retried early.
@@ -164,7 +166,7 @@ def get(base_url, path, token, clock=SYSTEM_CLOCK):
                              retry_after, RETRY_AFTER_MAX_SECONDS, reason,
                              waits, records)
             continue
-        if rate_limited and remaining_zero and reset is not None:
+        if rate_limit_marked and remaining_zero and reset is not None:
             # Precedence 2: affirmative primary exhaustion parks at most once.
             if parked:
                 # Renewed affirmative exhaustion: terminate as a recorded

@@ -61,3 +61,13 @@ annotation such as `CON` remains included verbatim because the actual
 directory is ID-prefixed (for example `42-CON`) and is therefore not the
 reserved device name itself. The normative annotation-safety rule is
 unchanged: `^[A-Za-z0-9_.-]{1,100}$`, with no trailing dot.
+
+**Derived-entry state and reason clarifications (ratified refinements, E1,
+2026-07-29):** V34/V35's derived taxonomy state is `unknown` (reason
+`structural-conflict`); `unknown` covers both insufficient trustworthy
+evidence and mutually conflicting evidence that prevents selecting a valid
+observation. V40's all-`unknown` entries carry reason `raw-evidence-absent`,
+the ratified closed-set extension for a present required input whose expected
+raw-evidence artifact is absent. The specification's derivation-evidence
+refinements block is normative for the transport-termination mapping realized
+at the derive seam (the V23/V24/V27 state · reason pairs).

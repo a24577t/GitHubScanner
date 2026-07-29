@@ -1,7 +1,7 @@
 """Canonical target discovery and evidence addressing (ADR-0005)."""
 import re
 
-from collector.taxonomy import body_of, shape_ok
+from collector.taxonomy import body_of, usable_page
 
 # --- Canonical target discovery -------------------------------------------
 # One rule, shared verbatim by collection planning and offline rederivation:
@@ -31,13 +31,9 @@ def discover_targets(page_records):
     """
     by_id = {}
     for record in page_records:
-        if record is None:
+        if not usable_page(record):
             continue
-        body = body_of(record)
-        if not (200 <= record["envelope"]["status"] < 300
-                and shape_ok(body, "object_array")):
-            continue
-        for item in body:
+        for item in body_of(record):
             if _eligible(item) and item["id"] not in by_id:
                 by_id[item["id"]] = {
                     "id": item["id"],
