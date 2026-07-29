@@ -1,5 +1,6 @@
 """Append-only collection reports: JSON for machines, Markdown for humans."""
 from collector.serialize import write_canonical, write_text
+from collector.summary import WAIT_CATEGORIES
 
 ALL_STATES = (
     "collected", "absent", "inaccessible", "unsupported",
@@ -35,7 +36,7 @@ def build_report(api_url, org, run_id, identity_login, summary):
         "org": org,
         "rate_limit": {
             "occurrences": len(summary["waits"]),
-            "waits_seconds": summary["waits"],
+            "total_seconds": sum(summary["waits"]),
         },
         "resource_states": summary["resource_states"],
         "resources": _resource_aggregates(summary["resources"]),
@@ -83,7 +84,7 @@ def render_markdown(report):
         lines.append("None.")
     rate = report["rate_limit"]
     lines += ["", f"Rate-limit waits: {rate['occurrences']} "
-                  f"(total {sum(rate['waits_seconds'])}s)"]
+                  f"(total {rate['total_seconds']}s)"]
     lines += _aggregate_lines(report["resources"])
     lines += _execution_lines(report["execution"])
     return "\n".join(lines)
@@ -121,15 +122,15 @@ def _execution_lines(execution):
         "", "| Wait category | Count | Requested s | Slept s |",
         "| --- | --- | --- | --- |",
     ]
-    for category in ("primary-park", "retry-after", "retry"):
+    for category in WAIT_CATEGORIES:
         bucket = waits[category]
         lines.append(f"| {category} | {bucket['count']} "
                      f"| {bucket['requested_seconds']} "
                      f"| {bucket['slept_seconds']} |")
     lines += [
         "",
-        f"Refused waits: {waits['refused']}; maximum single wait: "
-        f"{waits['max_single_wait_seconds']}s; total requested: "
+        f"Refused waits: {waits['refused']}; maximum single wait (requested): "
+        f"{waits['max_single_wait_seconds']}s; total requested (waits taken): "
         f"{waits['total_wait_seconds']}s",
         "",
         "Terminations: " + (_counts(execution["terminations"])

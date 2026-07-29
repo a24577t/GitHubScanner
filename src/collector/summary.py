@@ -1,9 +1,10 @@
 """Execution/wait visibility aggregates from retained evidence only (V30).
 
-Pure aggregation over the raw tree as found: wait categories and seconds
-from retained wait_records, terminations from retained termination_reason,
-planned requests from retained inventory via canonical discovery. Legacy
-trees without the E1 retention fields read as empty — never repaired.
+Read-only aggregation over the raw tree as found — no network, no wall
+clock, no writes: wait categories and seconds from retained wait_records,
+terminations from retained termination_reason, planned requests from
+retained inventory via canonical discovery. Legacy trees without the E1
+retention fields read as empty — never repaired.
 """
 from collector import resources, targets
 from collector.projections import scan_envelope
@@ -11,6 +12,8 @@ from collector.transport import rate_limited
 
 WAIT_CATEGORIES = ("primary-park", "retry-after", "retry")
 SLEPT_OUTCOMES = frozenset({"retried", "renewed-exhaustion"})
+REFUSED_OUTCOMES = frozenset({"retry-after-exceeds-maximum",
+                              "rate_limit_reset_exceeds_maximum_park"})
 SINGLE_ARTIFACTS = ("user.json", "meta.json", "org.json")
 
 
@@ -28,7 +31,11 @@ def _tree_envelopes(raw_dir):
 def _transport_failed(envelope):
     """The bounded-transport-failure class, from the final retained record:
     unreachable (status 0), attempts-exhausting 5xx, or an affirmatively
-    rate-limit-marked final response. Anything else is a definitive answer."""
+    rate-limit-marked final response. Anything else is a definitive answer.
+
+    Aggregate visibility only — taxonomy's E1-Q3 mapping remains the sole
+    authority for derived states and reasons; both build on the shared
+    rate_limited predicate."""
     status = envelope.get("status", 0)
     headers = envelope.get("response_headers", {})
     return status == 0 or status >= 500 or bool(rate_limited(status, headers))
@@ -73,11 +80,16 @@ def execution_summary(raw_dir, page_records):
         if reason is not None:
             terminations[reason] = terminations.get(reason, 0) + 1
         for record in envelope.get("wait_records", []):
-            if record.get("outcome") not in SLEPT_OUTCOMES:
+            # Closed ratified vocabularies gate every figure; anything else
+            # is junk the scanner could not have written and is skipped per
+            # the T6 scan-tolerance rule — never counted, never a crash.
+            if not isinstance(record, dict):
+                continue
+            if record.get("outcome") in REFUSED_OUTCOMES:
                 refused += 1
                 continue
             bucket = waits.get(record.get("category"))
-            if bucket is None:
+            if record.get("outcome") not in SLEPT_OUTCOMES or bucket is None:
                 continue
             requested = record.get("requested_seconds") or 0
             bucket["count"] += 1

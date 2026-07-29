@@ -56,6 +56,19 @@ class ReportAggregates(unittest.TestCase):
         self.assertEqual(block["state"], "collected")
         self.assertEqual(block["waits"], {"count": 2, "total_seconds": 31})
 
+    def test_rate_limit_block_is_size_bounded(self):
+        # S10 run-1 finding: the Slice-1 raw wait list grew with estate
+        # pages; T7's size-independence AC bounds it to aggregate figures.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            page = page_record([repo_item(1)])
+            page["envelope"]["waits_seconds"] = [2, 3]
+            write_tree(out, [page])
+            report = build_report("https://api.example", "acme", RUN, "op",
+                                  run_summary(out, RUN))
+        self.assertEqual(report["rate_limit"],
+                         {"occurrences": 2, "total_seconds": 5})
+
     def test_report_size_independent_of_estate_size(self):
         small = build_report("https://api.example", "acme", RUN, "op",
                              collected_estate(2))
