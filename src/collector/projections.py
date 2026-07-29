@@ -3,7 +3,7 @@ import json
 
 from collector import targets
 from collector.resources import project
-from collector.taxonomy import body_of, classify_resource
+from collector.taxonomy import body_of, classify_resource, usable_page
 
 COVERAGE_BASIS = "eligible-discovered-repositories"
 
@@ -21,14 +21,36 @@ def _entry(target, descriptor, state, reason, body, inputs):
             "state": state, "reason": reason, **projected}
 
 
+def _classify_drain(directory, descriptor):
+    """One paginated listing drain: the entry takes the first non-collected
+    page classification (Slice 1 listing rule); items from usable pages still
+    contribute to projection — a capped drain is qualified, never discarded."""
+    pages = sorted(directory.glob(descriptor["name"] + ".page-*.json"),
+                   key=lambda p: int(p.stem.rsplit("-", 1)[-1]))
+    if not pages:
+        return "unknown", "raw-evidence-absent", None
+    classifications, items = [], []
+    for path in pages:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        classifications.append(classify_resource(record, descriptor))
+        if usable_page(record):
+            items.extend(body_of(record))
+    state, reason = next(
+        (pair for pair in classifications if pair[0] != "collected"),
+        ("collected", "collected"))
+    return state, reason, items if state in ("collected", "incomplete") else None
+
+
 def _classify_target(raw_dir, target, descriptor):
-    """(state, reason, body) for one target's expected artifact.
+    """(state, reason, body) for one target's expected evidence.
 
     An absent artifact is the durable trace of a recorded collection failure
     (E1) — or a pre-fan-out tree — and derives unknown; nothing is fabricated.
     """
     directory = raw_dir / "repos" / targets.directory_key(
         target["id"], target["name"])
+    if descriptor["shape"] == "object_array":
+        return _classify_drain(directory, descriptor)
     path = directory / (descriptor["name"] + ".json")
     if not path.exists():
         return "unknown", "raw-evidence-absent", None

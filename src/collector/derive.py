@@ -77,9 +77,9 @@ def run_summary(out_dir, run_id):
 
     pages = sorted(raw_dir.glob("repos.page-*.json"),
                    key=lambda p: int(p.stem.split("-")[-1]))
+    page_records = [json.loads(p.read_text(encoding="utf-8")) for p in pages]
     page_states, items = [], 0
-    for number, page_path in enumerate(pages, start=1):
-        record = json.loads(page_path.read_text(encoding="utf-8"))
+    for number, record in enumerate(page_records, start=1):
         state, _ = classify(record, shape="object_array",
                             absence_message=ABSENCE_MESSAGE)
         note(f"repositories.page-{number}", record, state)
@@ -90,13 +90,51 @@ def run_summary(out_dir, run_id):
         (s for s in page_states if s != "collected"), "collected"
     ) if page_states else "unknown"
     complete = bool(page_states) and all(s == "collected" for s in page_states)
+    structural = projections.structural_report(raw_dir)
     return {
         "resource_states": resource_states,
         "failures": failures,
         "listings": {"repositories": {"pages": len(pages), "items": items,
                                       "complete": complete}},
         "waits": waits,
+        # Additive keys for T7's report growth; Slice 1 report assembly reads
+        # only the four keys above, so its output is untouched this ticket.
+        "resources": _fanout_summary(run_id, raw_dir, page_records,
+                                     resource_states["repositories"]),
+        "structural": {key: list(value) for key, value in structural.items()},
     }
+
+
+def _fanout_summary(run_id, raw_dir, page_records, inventory_state):
+    """Estate-independent per-descriptor aggregates (failures excepted by
+    design live in reason_counts until T7 decides its rendering)."""
+    waits_by_resource = {}
+    repos_root = raw_dir / "repos"
+    if repos_root.is_dir():
+        for artifact in sorted(repos_root.rglob("*.json")):
+            envelope = json.loads(
+                artifact.read_text(encoding="utf-8")).get("envelope", {})
+            name = envelope.get("resource")
+            if name is not None:
+                waits_by_resource.setdefault(name, []).extend(
+                    envelope.get("waits_seconds", []))
+    aggregates = {}
+    for descriptor in resources.DESCRIPTORS:
+        document = projections.resource_document(
+            run_id, raw_dir, descriptor, page_records, inventory_state)
+        state_counts, reason_counts = {}, {}
+        for entry in document["repositories"]:
+            state_counts[entry["state"]] = (
+                state_counts.get(entry["state"], 0) + 1)
+            reason_counts[entry["reason"]] = (
+                reason_counts.get(entry["reason"], 0) + 1)
+        aggregates[descriptor["name"]] = {
+            "state": document["state"],
+            "state_counts": state_counts,
+            "reason_counts": reason_counts,
+            "waits_seconds": waits_by_resource.get(descriptor["name"], []),
+        }
+    return aggregates
 
 
 def derive_observed(out_dir, run_id=None):
