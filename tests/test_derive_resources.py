@@ -156,6 +156,21 @@ class EntryClassification(unittest.TestCase):
             self.assertEqual((by_id[2]["state"], by_id[2]["reason"]),
                              ("collected", "collected"))
 
+    def test_every_derived_entry_reason_is_in_the_closed_set(self):
+        # The closed-set invariant swept at the emission seam, so vocabulary
+        # drift between taxonomy.REASONS and derivation cannot go unnoticed.
+        from collector.taxonomy import REASONS
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1, default_branch=None),
+                                          repo_item(2), repo_item(3)])],
+                       [protection("2-repo-2", 200, PROTECTION_BODY)])
+            entries = protection_doc(out)["repositories"]
+            self.assertEqual(len(entries), 3)
+            for entry in entries:
+                self.assertIn(entry["reason"], REASONS)
+
     def test_absent_artifact_with_input_present_is_raw_evidence_absent(self):
         # E1: the absent artifact is the durable trace of a recorded
         # collection failure; derivation reads it as unknown.

@@ -59,6 +59,22 @@ def _classify_target(raw_dir, target, descriptor):
     return state, reason, body_of(record) if state == "collected" else None
 
 
+def scan_envelope(artifact):
+    """Envelope of one artifact for tree-wide scans, or None.
+
+    Scans read the run as found: junk the scanner could not have written
+    (unrecognized directories, unreadable files) is reported or skipped,
+    never allowed to derail derivation. Evidence consumption for entries
+    stays strict — this tolerance is scan-only.
+    """
+    try:
+        loaded = json.loads(artifact.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    envelope = loaded.get("envelope") if isinstance(loaded, dict) else None
+    return envelope if isinstance(envelope, dict) else None
+
+
 def structural_report(raw_dir):
     """Invoke ADR-0005 structural validation over the evidence tree as found.
 
@@ -72,8 +88,7 @@ def structural_report(raw_dir):
         for directory in sorted(p for p in repos_root.iterdir() if p.is_dir()):
             envelope_ids = []
             for artifact in sorted(directory.glob("*.json")):
-                envelope = json.loads(
-                    artifact.read_text(encoding="utf-8")).get("envelope", {})
+                envelope = scan_envelope(artifact) or {}
                 repo = envelope.get("repo")
                 if isinstance(repo, dict) and "id" in repo:
                     envelope_ids.append(repo["id"])
@@ -81,18 +96,23 @@ def structural_report(raw_dir):
     return targets.structural_conflicts(claims)
 
 
+def conflicted_ids(report):
+    """Repository IDs whose evidence a structural report gates out."""
+    return {targets.claimed_repository_id(name)
+            for name in report["conflicted_directories"]}
+
+
 def resource_document(run_id, raw_dir, descriptor, page_records,
-                      inventory_state):
+                      inventory_state, conflicted):
     """The latest-only observed document for one descriptor.
 
     Coverage qualifies the target set and never converts descriptor states;
     entries ascend by repository id (canonical discovery order, ADR-0005).
     Entry precedence: the no-request rule (missing input) is evaluated before
-    tree inspection; a structural conflict then suppresses artifact reads so
-    no affected evidence surfaces as an apparently valid observation.
+    tree inspection; a structural conflict (``conflicted``: the IDs gated by
+    the caller's structural report) then suppresses artifact reads so no
+    affected evidence surfaces as an apparently valid observation.
     """
-    conflicted = {targets.claimed_repository_id(name)
-                  for name in structural_report(raw_dir)["conflicted_directories"]}
     entries = []
     for target in targets.discover_targets(page_records):
         inputs, missing = targets.descriptor_inputs(target, descriptor)

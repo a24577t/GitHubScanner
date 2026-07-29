@@ -3,8 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from collector.derive import run_summary
 from test_derive_resources import (
-    PROTECTION_BODY, page_record, protection, protection_doc, record,
+    PROTECTION_BODY, RUN, page_record, protection, protection_doc, record,
     repo_item, write_tree,
 )
 
@@ -125,6 +126,25 @@ class StructuralConflicts(unittest.TestCase):
             [entry] = protection_doc(out)["repositories"]
             self.assertEqual((entry["state"], entry["reason"]),
                              ("collected", "collected"))
+
+    def test_unreadable_junk_in_unrecognized_directory_never_derails(self):
+        # Tree scans read the run as found: junk the scanner could not have
+        # written is reported, never allowed to derail derivation.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)])],
+                       [protection("1-repo-1", 200, PROTECTION_BODY,
+                                   repo={"id": 1, "full_name": "acme/repo-1"})])
+            junk = (out / "evidence" / "raw" / RUN / "repos" / "stray" /
+                    "junk.json")
+            junk.parent.mkdir(parents=True)
+            junk.write_text("{not json", encoding="utf-8")
+            [entry] = protection_doc(out)["repositories"]
+            self.assertEqual((entry["state"], entry["reason"]),
+                             ("collected", "collected"))
+            summary = run_summary(out, RUN)
+            self.assertIn("stray",
+                          summary["structural"]["unrecognized_directories"])
 
 
 if __name__ == "__main__":

@@ -8,13 +8,14 @@ from collector.transport import (
     parse_nonnegative_int, rate_limited,
 )
 
-# Closed deterministic-reason set for this slice (spec: taxonomy application).
+# Closed deterministic-reason set for this slice (spec: taxonomy application;
+# raw-evidence-absent joined by ratified refinement, E1, 2026-07-29).
 REASONS = frozenset({
     "collected", "absence-message-matched", "absence-rule-unmatched-404",
     "authorization-denied", "shape-invalid", "transport-failed",
     "pagination-cap", "missing-required-input", "structural-conflict",
-    "rate_limit_reset_exceeds_maximum_park", "retry-after-exceeds-maximum",
-    "unusable-rate-limit-reset",
+    "raw-evidence-absent", "rate_limit_reset_exceeds_maximum_park",
+    "retry-after-exceeds-maximum", "unusable-rate-limit-reset",
 })
 
 

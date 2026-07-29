@@ -79,7 +79,7 @@ class GenericDrainSeam(unittest.TestCase):
         raw_dir = out / "evidence" / "raw" / RUN
         pages = [page_record([repo_item(1)])]
         return resource_document(RUN, raw_dir, SYNTHETIC_DRAIN, pages,
-                                 "collected")
+                                 "collected", conflicted=set())
 
     def test_multi_page_drain_derives_collected(self):
         with tempfile.TemporaryDirectory() as tmp:

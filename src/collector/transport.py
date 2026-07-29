@@ -137,8 +137,8 @@ def get(base_url, path, token, clock=SYSTEM_CLOCK):
         attempts += 1
         attempts_charged += 1
         result = _fetch_once(url, token)
-        marked = rate_limited(result.status, result.headers)
-        if not marked and result.status < 500:
+        rate_limit_marked = rate_limited(result.status, result.headers)
+        if not rate_limit_marked and result.status < 500:
             return _finish(result, attempts, waits, records, None)
         # ADR-0007: remaining is parsed, and exhaustion means exactly zero.
         remaining_zero = (
@@ -150,8 +150,8 @@ def get(base_url, path, token, clock=SYSTEM_CLOCK):
         # Remaining-zero with a missing/unparseable reset: the fallback wait
         # preserves the unusable-reset evidence reason (ADR-0007).
         reason = ("unusable-rate-limit-reset"
-                  if marked and remaining_zero and reset is None else None)
-        if marked and retry_after is not None:
+                  if rate_limit_marked and remaining_zero and reset is None else None)
+        if rate_limit_marked and retry_after is not None:
             # Precedence 1: a valid Retry-After — bounded, never a park.
             if retry_after > RETRY_AFTER_MAX_SECONDS:
                 # Never clamped, never retried early.
@@ -166,7 +166,7 @@ def get(base_url, path, token, clock=SYSTEM_CLOCK):
                              retry_after, RETRY_AFTER_MAX_SECONDS, reason,
                              waits, records)
             continue
-        if marked and remaining_zero and reset is not None:
+        if rate_limit_marked and remaining_zero and reset is not None:
             # Precedence 2: affirmative primary exhaustion parks at most once.
             if parked:
                 # Renewed affirmative exhaustion: terminate as a recorded

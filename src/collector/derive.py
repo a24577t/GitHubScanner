@@ -86,9 +86,7 @@ def run_summary(out_dir, run_id):
         del resource_states[f"repositories.page-{number}"]
         page_states.append(state)
         items += record["envelope"].get("item_count", 0)
-    resource_states["repositories"] = next(
-        (s for s in page_states if s != "collected"), "collected"
-    ) if page_states else "unknown"
+    resource_states["repositories"] = projections.listing_state(page_states)
     complete = bool(page_states) and all(s == "collected" for s in page_states)
     structural = projections.structural_report(raw_dir)
     return {
@@ -100,20 +98,21 @@ def run_summary(out_dir, run_id):
         # Additive keys for T7's report growth; Slice 1 report assembly reads
         # only the four keys above, so its output is untouched this ticket.
         "resources": _fanout_summary(run_id, raw_dir, page_records,
-                                     resource_states["repositories"]),
+                                     resource_states["repositories"],
+                                     projections.conflicted_ids(structural)),
         "structural": {key: list(value) for key, value in structural.items()},
     }
 
 
-def _fanout_summary(run_id, raw_dir, page_records, inventory_state):
+def _fanout_summary(run_id, raw_dir, page_records, inventory_state,
+                    conflicted):
     """Estate-independent per-descriptor aggregates (failures excepted by
     design live in reason_counts until T7 decides its rendering)."""
     waits_by_resource = {}
     repos_root = raw_dir / "repos"
     if repos_root.is_dir():
         for artifact in sorted(repos_root.rglob("*.json")):
-            envelope = json.loads(
-                artifact.read_text(encoding="utf-8")).get("envelope", {})
+            envelope = projections.scan_envelope(artifact) or {}
             name = envelope.get("resource")
             if name is not None:
                 waits_by_resource.setdefault(name, []).extend(
@@ -121,7 +120,8 @@ def _fanout_summary(run_id, raw_dir, page_records, inventory_state):
     aggregates = {}
     for descriptor in resources.DESCRIPTORS:
         document = projections.resource_document(
-            run_id, raw_dir, descriptor, page_records, inventory_state)
+            run_id, raw_dir, descriptor, page_records, inventory_state,
+            conflicted)
         state_counts, reason_counts = {}, {}
         for entry in document["repositories"]:
             state_counts[entry["state"]] = (
@@ -174,10 +174,12 @@ def derive_observed(out_dir, run_id=None):
         {"count": len(repos), "repositories": repos,
          "run_id": run_id, "state": listing_state},
     )
+    conflicted = projections.conflicted_ids(projections.structural_report(raw_dir))
     for descriptor in resources.DESCRIPTORS:
         write_canonical(
             out_dir / "observed" / (descriptor["name"] + ".json"),
             projections.resource_document(run_id, raw_dir, descriptor,
-                                          page_records, listing_state),
+                                          page_records, listing_state,
+                                          conflicted),
         )
     return run_id
