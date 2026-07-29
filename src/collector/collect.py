@@ -44,7 +44,12 @@ def _record(result, run_id, **extra):
         "url": result.url,
         "attempts": result.attempts,
         "waits_seconds": result.waits,
+        # E1 envelope transport-evidence retention: records verbatim in
+        # transport order; a termination reason only when one exists.
+        "wait_records": result.wait_records,
     }
+    if result.termination_reason is not None:
+        envelope["termination_reason"] = result.termination_reason
     envelope.update(extra)
     return {"envelope": envelope, "body_text": result.body_text}
 
