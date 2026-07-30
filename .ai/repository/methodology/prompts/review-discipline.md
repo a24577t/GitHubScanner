@@ -53,3 +53,7 @@ Explain the observed inconsistency.
 Clearly separate facts from recommendations.
 
 Do not present a preferred solution as though it is mandated by the repository unless an authoritative artifact explicitly requires it.
+
+Finding persistence
+
+Findings that survive to gate adjudication are persisted per MADR-0004 (`../adr/0004-review-finding-persistence.md`), the canonical persistence model for review findings. Reviewers apply it as part of review completion; the model itself is stated only there.
