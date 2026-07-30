@@ -48,12 +48,17 @@ def _transport_failed(envelope):
     """The bounded-transport-failure class, from the final retained record:
     unreachable (status 0), attempts-exhausting 5xx, or an affirmatively
     rate-limit-marked final response. Anything else is a definitive answer.
+    Malformed scan input (non-int status, non-dict headers) returns None —
+    the record contributes to neither figure, per the scan-tolerance rule.
 
     Aggregate visibility only — taxonomy's E1-Q3 mapping remains the sole
     authority for derived states and reasons; both build on the shared
     rate_limited predicate."""
-    status = envelope.get("status", 0)
-    headers = envelope.get("response_headers", {})
+    status = envelope.get("status")
+    headers = envelope.get("response_headers")
+    if (isinstance(status, bool) or not isinstance(status, int)
+            or not isinstance(headers, dict)):
+        return None
     return status == 0 or status >= 500 or bool(rate_limited(status, headers))
 
 
@@ -86,14 +91,18 @@ def execution_summary(raw_dir, page_records):
     envelopes = _tree_envelopes(raw_dir)
     planned_singles, planned_drains, missing_input, absent = _planned(
         raw_dir, page_records)
-    failed = sum(1 for envelope in envelopes if _transport_failed(envelope))
+    verdicts = [_transport_failed(envelope) for envelope in envelopes]
+    failed = sum(1 for verdict in verdicts if verdict is True)
+    completed = sum(1 for verdict in verdicts if verdict is False)
     waits = {category: {"count": 0, "requested_seconds": 0,
                         "slept_seconds": 0} for category in WAIT_CATEGORIES}
     refused, singles_max = 0, 0
     terminations = {}
     for envelope in envelopes:
         reason = envelope.get("termination_reason")
-        if reason is not None:
+        # Only strings are valid retained reasons; anything else is malformed
+        # scan input, discarded before aggregation — never repaired.
+        if isinstance(reason, str):
             terminations[reason] = terminations.get(reason, 0) + 1
         records = envelope.get("wait_records")
         for record in (records if isinstance(records, list) else []):
@@ -122,7 +131,7 @@ def execution_summary(raw_dir, page_records):
             "missing_input": missing_input,
             "retained_records": len(envelopes),
             "attempts": sum(_number(e.get("attempts")) for e in envelopes),
-            "completed": len(envelopes) - failed,
+            "completed": completed,
             "failed": failed,
             "evidence_absent": absent,
         },

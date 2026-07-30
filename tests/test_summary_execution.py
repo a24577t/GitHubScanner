@@ -130,6 +130,59 @@ class ScanTolerance(unittest.TestCase):
                              "2026-01-01T00:00:00Z")
 
 
+class QualityGateProbes(unittest.TestCase):
+    """One probe per accepted QG finding F1–F4: malformed scan input must
+    not throw and must contribute nothing (discarded, never repaired)."""
+
+    def _stray_tree(self, out, stray):
+        write_tree(out, [page_record([repo_item(1)])],
+                   [("1-repo-1", "stray.json", stray)])
+        return execution(out)["requests"]
+
+    def test_f1_malformed_termination_reason_contributes_nothing(self):
+        bad = record(200, PROTECTION_BODY, termination_reason=["x"])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)])],
+                       [("1-repo-1", "default-branch-protection.json", bad)])
+            self.assertEqual(execution(out)["terminations"], {})
+
+    def test_f2_string_status_in_stray_file_contributes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            requests = self._stray_tree(Path(tmp) / "out",
+                                        record("500", {"message": "boom"}))
+            self.assertEqual(requests["retained_records"], 5)
+            self.assertEqual(requests["failed"], 0)
+            self.assertEqual(requests["completed"], 4)
+
+    def test_f3_non_dict_response_headers_contributes_nothing(self):
+        stray = record(403, {"message": "denied"})
+        stray["envelope"]["response_headers"] = "junk"
+        with tempfile.TemporaryDirectory() as tmp:
+            requests = self._stray_tree(Path(tmp) / "out", stray)
+            self.assertEqual(requests["failed"], 0)
+            self.assertEqual(requests["completed"], 4)
+
+    def test_f4_heterogeneous_termination_keys_serialize(self):
+        from collector.report import build_report
+        from collector.serialize import canonical_dumps
+
+        five = record(429, {"message": "a"}, termination_reason=5)
+        good = record(429, {"message": "b"},
+                      headers={"retry-after": "9999"},
+                      termination_reason="retry-after-exceeds-maximum")
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1), repo_item(2)])],
+                       [("1-repo-1", "default-branch-protection.json", five),
+                        ("2-repo-2", "default-branch-protection.json", good)])
+            summary = run_summary(out, RUN)
+            self.assertEqual(summary["execution"]["terminations"],
+                             {"retry-after-exceeds-maximum": 1})
+            canonical_dumps(build_report("https://api.example", "acme", RUN,
+                                         "op", summary))
+
+
 class HugeIntegers(unittest.TestCase):
     def test_arbitrary_precision_integers_never_crash(self):
         # json.loads parses 400-digit integers; they are finite numbers and
