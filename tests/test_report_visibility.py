@@ -15,6 +15,7 @@ from test_derive_resources import (
     PROTECTION_BODY, RUN, page_record, protection, record, repo_item,
     write_tree,
 )
+from test_derive_rulesets import rs_file
 
 
 def summary_for(repos, resources):
@@ -84,8 +85,6 @@ class RulesetsAggregates(unittest.TestCase):
     def test_rulesets_report_row_is_bounded_and_rendered(self):
         # T8 report effect (V06/V07): the second descriptor surfaces as one
         # bounded aggregate row per format, never per-ruleset content.
-        from test_derive_rulesets import rs_file
-
         summary = summary_for([repo_item(1)], [rs_file(1, 1, [])])
         report = build_report("https://api.example", "acme", RUN, "op",
                               summary)

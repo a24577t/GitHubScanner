@@ -123,7 +123,7 @@ class ObservedDocument(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
             write_tree(out, [page_record([repo_item(1)])],
-                       [(f"1-repo-1", "repository-rulesets.page-1.json",
+                       [("1-repo-1", "repository-rulesets.page-1.json",
                          record(500, {"message": "boom"}, page=1,
                                 item_count=0))])
             [entry] = rulesets_doc(out)["repositories"]

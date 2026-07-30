@@ -181,6 +181,22 @@ class ShippedDescriptorContract(unittest.TestCase):
         self.assertEqual(resources.project(resources.REPOSITORY_RULESETS, []),
                          {"count": 0, "rulesets": []})
 
+    def test_projection_is_source_agnostic_exclusion_lives_in_the_request(self):
+        # V11's offline reading, pinned (S10 spec-axis finding): parent
+        # exclusion is descriptor coherence at the request
+        # (includes_parents=false in the raw URL), never a hidden projection
+        # filter - evidence is projected as found, so "only repository-owned
+        # summaries project" holds exactly because collected bodies contain
+        # only them. Behavioral exclusion stays conditional live scope (V12,
+        # T9).
+        org_owned = {**RULESET_ITEM, "id": 8, "source_type": "Organization",
+                     "source": "GHScannerLab"}
+        projected = resources.project(resources.REPOSITORY_RULESETS,
+                                      [RULESET_ITEM, org_owned])
+        self.assertEqual([entry["id"] for entry in projected["rulesets"]],
+                         [8, 42])
+        self.assertEqual(projected["count"], 2)
+
     def test_shipped_table_with_both_descriptors_validates(self):
         resources.validate_table(resources.DESCRIPTORS)
 
