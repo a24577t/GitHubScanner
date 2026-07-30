@@ -25,7 +25,7 @@ A minimal, manually-managed GitHub organization used as the live validation targ
 | `standard-repo` | Baseline; protection and ruleset fixture | public | Free | `archived: false`, `fork: false`, `default_branch: main`; classic protection on `main` requiring exactly 1 approving review → `collected` · `collected`; exactly one repository-owned ruleset (`standard-repo-baseline`, target `branch`, enforcement `active`) → count 1 | Validation Environment release (post-v0.1.0); protection and ruleset added for Slice 2 T9 (2026-07-30) |
 | `archived-repo` | Archived-state fixture | public | Free | `archived: true`, state `collected`; protection → `absent` · `absence-message-matched` (V04 corroboration) | Validation Environment release (post-v0.1.0) |
 | `Hello-World` | Fork fixture (fork of `octocat/Hello-World`) | public | Free | `fork: true`, `default_branch: master`, state `collected`; protection → `absent` · `absence-message-matched` (V05 corroboration) | Validation Environment release (post-v0.1.0) |
-| `unprotected-repo` | Canonical affirmative-absence pin (V02) | public | Free | `archived: false`, `fork: false`, `default_branch: main`, ≥1 commit; no protection, no rulesets → `absent` · `absence-message-matched` | Slice 2 T9 (2026-07-30) |
+| `unprotected-repo` | Canonical affirmative-absence pin (V02) | public | Free | `archived: false`, `fork: false`, `default_branch: main`, ≥1 commit; no protection → `absent` · `absence-message-matched`; no rulesets → `collected`, count 0 (emptiness is a value, never `absent`) | Slice 2 T9 (2026-07-30) |
 | `empty-repo` | Empty-repository response class (V03) | public | Free | zero commits (never initialized); protection request → 404 `Branch not found` → `inaccessible` · `absence-rule-unmatched-404`; rulesets → `collected`, count 0 | Slice 2 T9 (2026-07-30) |
 
 Repositories are added lazily: only when an approved vertical slice's specification requires a new fixture, in the same change set that approves the capability. No repository exists ahead of an approved specification.
@@ -47,8 +47,10 @@ absence message `Branch not protected` **confirmed** (V02; corroborated by
 `absence-rule-unmatched-404`, distinct from the absence set (V03);
 parent-exclusion request contract **proven** by the retained raw URL
 (`includes_parents=false`, V11). Recorded gap (V10): the restricted PAT was
-not provisioned this cycle; live insufficient-authorization behavior remains
-an explicit validation gap carried by the offline suite. Recorded limitation
+not provisioned this cycle — the specification requires it only when safely
+provisionable, and that provisioning was not performed for this run; live
+insufficient-authorization behavior remains an explicit validation gap carried
+by the offline suite. Recorded limitation
 (V12): the Free plan does not permit an organization-owned ruleset on
 `GHScannerLab`; behavioral parent exclusion is conditionally unvalidated —
 revisit via wayfinder tickets #2/#3 (trial-organization route above, absolute
@@ -68,4 +70,4 @@ It does **not** certify: GitHub Enterprise Server, GitHub Enterprise Cloud, Ente
 
 Known live-coverage limits at Slice 1: a run of this size exercises the authenticated happy path, real envelope and header shapes, and single-page listing only. Multi-page drain, rate-limit waits, retries, and the `absent`/`unsupported`/`failed`/`incomplete` states remain proven by the offline test suite.
 
-At Slice 2 T9 (run `20260730T162522Z`), live coverage additionally exercises: repository-scoped fan-out across five targets, the protection object read, the canonical affirmative-absence 404, the empty-repository response class, non-empty and empty rulesets listings, and the parent-exclusion request contract. Still proven only by the offline suite: multi-page drain, rate-limit waits and parks, retries, the `unsupported`/`failed`/`incomplete` states, restricted-credential denial (V10 gap), and organization-ruleset behavioral exclusion (V12 limitation).
+At Slice 2 T9 (run `20260730T162522Z`), live coverage additionally exercises: repository-scoped fan-out across five targets, the protection object read, the canonical affirmative-absence 404, the empty-repository response class, non-empty and empty rulesets listings, and the parent-exclusion request contract. Still proven only by the offline suite: multi-page drain, rate-limit waits and parks, retries, the `unsupported`/`failed`/`incomplete` states, and restricted-credential denial (V10 gap). Organization-ruleset behavioral parent exclusion (V12) is covered by neither: offline tests prove only that repository-owned summaries project; the behavioral exclusion itself remains conditionally unvalidated pending the trial route or wayfinder tickets #2/#3.

@@ -74,6 +74,13 @@ behavior pinned by the validation run). An empty listing is `collected` with
 - Per-ruleset detail is deferred — the designated first multi-request
   descriptor candidate (ADR-0004).
 
+**Ruleset ordering tiebreak (editorial clarification, consolidation
+2026-07-30):** "sorted by ruleset `id`" is realized by the repositories-sort
+precedent: items whose `id` is an integer (Python `bool` included, as an `int`
+subtype) sort first, ascending; all other items follow, ordered by the string
+form of their `id`; equal keys keep page-ordered source order via sort
+stability. Records the T8 review carry-forward; no behavior change.
+
 ## Collection model
 
 1. Org-scoped stage unchanged (`/user`, `/meta`, `/orgs/{org}`, inventory
