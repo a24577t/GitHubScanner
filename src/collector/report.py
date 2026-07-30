@@ -1,10 +1,26 @@
 """Append-only collection reports: JSON for machines, Markdown for humans."""
 from collector.serialize import write_canonical, write_text
+from collector.summary import WAIT_CATEGORIES
 
 ALL_STATES = (
     "collected", "absent", "inaccessible", "unsupported",
     "failed", "incomplete", "unknown",
 )
+
+
+def _resource_aggregates(resources):
+    """Per-descriptor aggregates bounded by the closed state and reason
+    vocabularies; raw per-repository wait lists never reach the report."""
+    return {
+        name: {
+            "state": block["state"],
+            "state_counts": block["state_counts"],
+            "reason_counts": block["reason_counts"],
+            "waits": {"count": len(block["waits_seconds"]),
+                      "total_seconds": sum(block["waits_seconds"])},
+        }
+        for name, block in resources.items()
+    }
 
 
 def build_report(api_url, org, run_id, identity_login, summary):
@@ -13,15 +29,17 @@ def build_report(api_url, org, run_id, identity_login, summary):
         counts[state] += 1
     return {
         "api_url": api_url,
+        "execution": summary["execution"],
         "failures": summary["failures"],
         "identity_login": identity_login,
         "listings": summary["listings"],
         "org": org,
         "rate_limit": {
             "occurrences": len(summary["waits"]),
-            "waits_seconds": summary["waits"],
+            "total_seconds": sum(summary["waits"]),
         },
         "resource_states": summary["resource_states"],
+        "resources": _resource_aggregates(summary["resources"]),
         "run_id": run_id,
         "state_counts": counts,
     }
@@ -66,8 +84,63 @@ def render_markdown(report):
         lines.append("None.")
     rate = report["rate_limit"]
     lines += ["", f"Rate-limit waits: {rate['occurrences']} "
-                  f"(total {sum(rate['waits_seconds'])}s)", ""]
+                  f"(total {rate['total_seconds']}s)"]
+    lines += _aggregate_lines(report["resources"])
+    lines += _execution_lines(report["execution"])
     return "\n".join(lines)
+
+
+def _counts(mapping):
+    return ", ".join(f"{key}: {mapping[key]}" for key in sorted(mapping))
+
+
+def _aggregate_lines(resources):
+    lines = ["", "## Per-resource aggregates", "",
+             "| Resource | State | State counts | Reason counts | Waits |",
+             "| --- | --- | --- | --- | --- |"]
+    for name in sorted(resources):
+        block = resources[name]
+        lines.append(
+            f"| {name} | {block['state']} | {_counts(block['state_counts'])} "
+            f"| {_counts(block['reason_counts'])} "
+            f"| {block['waits']['count']} ({block['waits']['total_seconds']}s) |"
+        )
+    return lines
+
+
+def _execution_lines(execution):
+    requests, waits = execution["requests"], execution["waits"]
+    lines = [
+        "", "## Execution", "",
+        f"- **Planned:** {requests['planned_singles']} singles, "
+        f"{requests['planned_drains']} drains "
+        f"(missing input: {requests['missing_input']})",
+        f"- **Retained records:** {requests['retained_records']} "
+        f"(attempts {requests['attempts']}; completed {requests['completed']}, "
+        f"failed {requests['failed']}, "
+        f"evidence absent {requests['evidence_absent']})",
+        "", "| Wait category | Count | Requested s | Slept s |",
+        "| --- | --- | --- | --- |",
+    ]
+    for category in WAIT_CATEGORIES:
+        bucket = waits[category]
+        lines.append(f"| {category} | {bucket['count']} "
+                     f"| {bucket['requested_seconds']} "
+                     f"| {bucket['slept_seconds']} |")
+    lines += [
+        "",
+        f"Refused waits: {waits['refused']}; maximum single wait (requested): "
+        f"{waits['max_single_wait_seconds']}s; total requested (waits taken): "
+        f"{waits['total_wait_seconds']}s",
+        "",
+        "Terminations: " + (_counts(execution["terminations"])
+                            if execution["terminations"] else "none") + ".",
+        "",
+        f"Capture window: {execution['captured']['first']} — "
+        f"{execution['captured']['last']}",
+        "",
+    ]
+    return lines
 
 
 def write_report(out_dir, report):

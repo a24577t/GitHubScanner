@@ -150,13 +150,14 @@ class SummaryGeneralization(unittest.TestCase):
             self.assertEqual(summary["structural"]["unrecognized_directories"],
                              ["stray-notes"])
             self.assertEqual(summary["structural"]["conflicted_directories"], [])
-            # Slice-1 report assembly is untouched this ticket: the same four
-            # summary keys feed it and no new top-level report key appears.
+            # T7 report growth is exactly the two authorized keys: execution
+            # (wait visibility) and resources (per-descriptor aggregates).
             report = build_report("https://api.example", "acme", RUN, "op",
                                   summary)
             self.assertEqual(sorted(report), [
-                "api_url", "failures", "identity_login", "listings", "org",
-                "rate_limit", "resource_states", "run_id", "state_counts",
+                "api_url", "execution", "failures", "identity_login",
+                "listings", "org", "rate_limit", "resource_states",
+                "resources", "run_id", "state_counts",
             ])
             self.assertEqual(sorted(summary["resource_states"]),
                              ["meta", "org", "repositories", "user"])
