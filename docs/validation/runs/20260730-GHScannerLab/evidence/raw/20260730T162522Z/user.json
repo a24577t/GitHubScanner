@@ -1,0 +1,21 @@
+{
+  "body_text": "{\"login\":\"a24577t\",\"id\":42841501,\"node_id\":\"MDQ6VXNlcjQyODQxNTAx\",\"avatar_url\":\"https://avatars.githubusercontent.com/u/42841501?v=4\",\"gravatar_id\":\"\",\"url\":\"https://api.github.com/users/a24577t\",\"html_url\":\"https://github.com/a24577t\",\"followers_url\":\"https://api.github.com/users/a24577t/followers\",\"following_url\":\"https://api.github.com/users/a24577t/following{/other_user}\",\"gists_url\":\"https://api.github.com/users/a24577t/gists{/gist_id}\",\"starred_url\":\"https://api.github.com/users/a24577t/starred{/owner}{/repo}\",\"subscriptions_url\":\"https://api.github.com/users/a24577t/subscriptions\",\"organizations_url\":\"https://api.github.com/users/a24577t/orgs\",\"repos_url\":\"https://api.github.com/users/a24577t/repos\",\"events_url\":\"https://api.github.com/users/a24577t/events{/privacy}\",\"received_events_url\":\"https://api.github.com/users/a24577t/received_events\",\"type\":\"User\",\"user_view_type\":\"public\",\"site_admin\":false,\"name\":null,\"company\":null,\"blog\":\"\",\"location\":null,\"email\":null,\"hireable\":null,\"bio\":null,\"twitter_username\":null,\"notification_email\":null,\"public_repos\":3,\"public_gists\":0,\"followers\":0,\"following\":0,\"created_at\":\"2018-08-30T14:36:32Z\",\"updated_at\":\"2026-05-31T20:36:10Z\"}",
+  "envelope": {
+    "attempts": 1,
+    "captured_at": "2026-07-30T16:25:22Z",
+    "method": "GET",
+    "response_headers": {
+      "x-github-api-version-selected": "2022-11-28",
+      "x-github-media-type": "github.v3; format=json",
+      "x-ratelimit-limit": "5000",
+      "x-ratelimit-remaining": "4974",
+      "x-ratelimit-reset": "1785431974",
+      "x-ratelimit-used": "26"
+    },
+    "run_id": "20260730T162522Z",
+    "status": 200,
+    "url": "https://api.github.com/user",
+    "wait_records": [],
+    "waits_seconds": []
+  }
+}

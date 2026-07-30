@@ -1,0 +1,28 @@
+{
+  "body_text": "[]",
+  "envelope": {
+    "attempts": 1,
+    "captured_at": "2026-07-30T16:25:26Z",
+    "item_count": 0,
+    "method": "GET",
+    "page": 1,
+    "repo": {
+      "full_name": "GHScannerLab/unprotected-repo",
+      "id": 1317453329
+    },
+    "resource": "repository-rulesets",
+    "response_headers": {
+      "x-github-api-version-selected": "2022-11-28",
+      "x-github-media-type": "github.v3; format=json",
+      "x-ratelimit-limit": "5000",
+      "x-ratelimit-remaining": "4963",
+      "x-ratelimit-reset": "1785431974",
+      "x-ratelimit-used": "37"
+    },
+    "run_id": "20260730T162522Z",
+    "status": 200,
+    "url": "https://api.github.com/repos/GHScannerLab/unprotected-repo/rulesets?includes_parents=false&per_page=100&page=1",
+    "wait_records": [],
+    "waits_seconds": []
+  }
+}

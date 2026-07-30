@@ -1,0 +1,121 @@
+{
+  "coverage": {
+    "basis": "eligible-discovered-repositories",
+    "eligible_target_count": 5,
+    "inventory_state": "collected"
+  },
+  "repositories": [
+    {
+      "allow_deletions": false,
+      "allow_force_pushes": false,
+      "branch": "main",
+      "enforce_admins": false,
+      "full_name": "GHScannerLab/standard-repo",
+      "id": 1312230136,
+      "reason": "collected",
+      "required_conversation_resolution": false,
+      "required_linear_history": false,
+      "required_pull_request_reviews": {
+        "dismiss_stale_reviews": false,
+        "require_code_owner_reviews": false,
+        "required_approving_review_count": 1
+      },
+      "required_signatures": false,
+      "required_status_checks": {
+        "contexts_count": "unknown",
+        "strict": "unknown"
+      },
+      "state": "collected"
+    },
+    {
+      "allow_deletions": "unknown",
+      "allow_force_pushes": "unknown",
+      "branch": "main",
+      "enforce_admins": "unknown",
+      "full_name": "GHScannerLab/archived-repo",
+      "id": 1312230165,
+      "reason": "absence-message-matched",
+      "required_conversation_resolution": "unknown",
+      "required_linear_history": "unknown",
+      "required_pull_request_reviews": {
+        "dismiss_stale_reviews": "unknown",
+        "require_code_owner_reviews": "unknown",
+        "required_approving_review_count": "unknown"
+      },
+      "required_signatures": "unknown",
+      "required_status_checks": {
+        "contexts_count": "unknown",
+        "strict": "unknown"
+      },
+      "state": "absent"
+    },
+    {
+      "allow_deletions": "unknown",
+      "allow_force_pushes": "unknown",
+      "branch": "master",
+      "enforce_admins": "unknown",
+      "full_name": "GHScannerLab/Hello-World",
+      "id": 1312230276,
+      "reason": "absence-message-matched",
+      "required_conversation_resolution": "unknown",
+      "required_linear_history": "unknown",
+      "required_pull_request_reviews": {
+        "dismiss_stale_reviews": "unknown",
+        "require_code_owner_reviews": "unknown",
+        "required_approving_review_count": "unknown"
+      },
+      "required_signatures": "unknown",
+      "required_status_checks": {
+        "contexts_count": "unknown",
+        "strict": "unknown"
+      },
+      "state": "absent"
+    },
+    {
+      "allow_deletions": "unknown",
+      "allow_force_pushes": "unknown",
+      "branch": "main",
+      "enforce_admins": "unknown",
+      "full_name": "GHScannerLab/unprotected-repo",
+      "id": 1317453329,
+      "reason": "absence-message-matched",
+      "required_conversation_resolution": "unknown",
+      "required_linear_history": "unknown",
+      "required_pull_request_reviews": {
+        "dismiss_stale_reviews": "unknown",
+        "require_code_owner_reviews": "unknown",
+        "required_approving_review_count": "unknown"
+      },
+      "required_signatures": "unknown",
+      "required_status_checks": {
+        "contexts_count": "unknown",
+        "strict": "unknown"
+      },
+      "state": "absent"
+    },
+    {
+      "allow_deletions": "unknown",
+      "allow_force_pushes": "unknown",
+      "branch": "main",
+      "enforce_admins": "unknown",
+      "full_name": "GHScannerLab/empty-repo",
+      "id": 1317454920,
+      "reason": "absence-rule-unmatched-404",
+      "required_conversation_resolution": "unknown",
+      "required_linear_history": "unknown",
+      "required_pull_request_reviews": {
+        "dismiss_stale_reviews": "unknown",
+        "require_code_owner_reviews": "unknown",
+        "required_approving_review_count": "unknown"
+      },
+      "required_signatures": "unknown",
+      "required_status_checks": {
+        "contexts_count": "unknown",
+        "strict": "unknown"
+      },
+      "state": "inaccessible"
+    }
+  ],
+  "run_id": "20260730T162522Z",
+  "state": "absent"
+}
