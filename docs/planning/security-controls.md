@@ -93,9 +93,9 @@ rules, and live pinning follows validation-run authority.
 
 - **Purpose:** whether code scanning is configured and operationally active.
 - **Evidence sources (composite — the designated multi-source case,
-  ADR-0008):** default-setup state; advanced CodeQL workflow presence and
-  staleness; external SARIF / third-party upload configuration where
-  observable; intended branch and event coverage; supported-language coverage;
+  ADR-0008):** default-setup state; advanced CodeQL workflow presence,
+  including disabled or stale workflow state; external SARIF / third-party
+  upload configuration where observable; intended branch and event coverage; supported-language coverage;
   organization security-configuration inheritance. Analysis presence may serve
   solely as operational-state evidence — never as alert inventory.
 - **Applicability:** language coverage and plan gating; `not-applicable` is an

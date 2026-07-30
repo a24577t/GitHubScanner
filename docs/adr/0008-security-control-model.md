@@ -26,11 +26,11 @@ The planes and their closed vocabularies:
   `not-configured`, `partially-configured`, `unavailable`, `inaccessible`,
   `unknown`. Each control's specification pins which subset of this closed set
   it can produce and the evidence rule for each value.
-- **Policy Expectation** — what is required of the target: an explicit
-  repository or repository-class requirement, an inherited organization
-  expectation where observable, or `no-expectation-defined`. Expectations are
-  committed policy artifacts or observed platform configuration — never
-  inferred universal standards.
+- **Policy Expectation** — what is required of the target:
+  `explicit-requirement` (a repository or repository-class requirement),
+  `inherited-organization-expectation` (where observable), or
+  `no-expectation-defined`. Expectations are committed policy artifacts or
+  observed platform configuration — never inferred universal standards.
 - **Conformance** — `conforming`, `non-conforming`, `indeterminate`,
   `not-applicable`. Computable only when the lower planes are determinate;
   on any indeterminacy it degrades to `indeterminate`. Derivation never
@@ -51,10 +51,10 @@ finding inventory is outside this decision's scope.
 
 **Composite evidence.** A Security Control may require multiple evidence
 sources. Code scanning is the designated composite case: default-setup state,
-advanced-workflow presence and staleness, external SARIF or third-party upload
-configuration where observable, intended branch and event coverage,
-supported-language coverage, and organization security-configuration
-inheritance. Each control is realized through one or more resource descriptors
+advanced-workflow presence, disabled or stale workflow state, external SARIF
+or third-party upload configuration where observable, intended branch and
+event coverage, supported-language coverage, and organization
+security-configuration inheritance. Each control is realized through one or more resource descriptors
 under ADR-0004; the first multi-source control triggers ADR-0004's deferred
 multi-request combination-semantics decision at its slice, not before.
 Organization-level security configuration is a first-class evidence source and

@@ -30,6 +30,14 @@ Every recorded consolidation input, with its disposition. "Ticket A/B/C"
 are the proposed future-work issues defined below — tracked work, authorized
 by nothing in this record.
 
+Theme mapping (Review themes A–G → dispositions): **A** (traversal
+unification) → the Ticket A rows; **B** (closed-vocabulary ownership) → the
+Ticket B rows; **C** (offline report reproducibility) → the Ticket C row
+(T9-1); **D** (editorial sweep) → the "Resolved here" rows (T8-1, T9-2..4);
+**E** (Observation Target Model evaluation) → the issue #26 row; **F**
+(domain modeling) → the Theme F row; **G** (review-finding persistence) →
+MADR-0004.
+
 | # | Input (source) | Disposition |
 |---|---|---|
 | T7-1 | Refused waits surface as termination statistics, never wait figures (STATUS T7) | Stands as accepted architecture practice (ADR-0007: a refusal is never slept). No action. |
@@ -76,14 +84,24 @@ correlated with diff size. MADR-0004 defines the rule from acceptance forward.
 
 ## This change set's review findings (MADR-0004 applied)
 
-Populated at review completion; this consolidation gate adjudicates a
-documentation/governance diff, so its findings persist here by construction.
+This consolidation gate adjudicates a documentation/governance diff, so its
+findings persist here. Two-axis review (Standards; Spec against the owner
+direction) run on the change set at `402290f`; all seven findings accepted at
+adjudication and fixed red-green in the follow-up commit. Provenance: this
+gate, `feat/architecture-consolidation`.
 
-- Standards axis: no findings surviving to adjudication.
-- Spec axis (owner direction as originating requirement): no findings
-  surviving to adjudication.
-- Regression: full suite re-run on the change set — 218/218 OK (docs-only
-  diff; production tree byte-identical to `0da2265`).
+| # | Axis | Classification | Finding | Disposition |
+|---|---|---|---|---|
+| R1 | Standards | Editorial (judgement call) | The Review Discipline finding-persistence clause restated MADR-0004's decision instead of pointing at it (pointer-first rule; drift risk) | Fixed — clause reduced to the pointer |
+| R2 | Standards | Editorial (judgement call) | STATUS restated ADR-0008's plane chain and governing principle verbatim in two places | Fixed — Architecture bullet trimmed to a pointer; detail retained once, in the completed-work entry |
+| R3 | Standards + Spec (found independently by both axes) | Repository Inconsistency (within the change set) | The first version of this section pre-asserted "no findings surviving to adjudication" before the review had completed — contradicting the MADR-0004 model it claims to apply | Fixed — section populated at adjudication (this table) |
+| R4 | Standards | Editorial | Missing trailing newline perpetuated in `review-discipline.md` | Fixed |
+| R5 | Spec | Partial implementation | ADR-0008's Policy Expectation plane was rendered as prose, not closed tokens like the other three planes | Fixed — `explicit-requirement` / `inherited-organization-expectation` / `no-expectation-defined` |
+| R6 | Spec | Partial implementation | Disabled-workflow state was absent from ADR-0008's code-scanning composite evidence list (present only as a roadmap validation note) | Fixed — added to ADR-0008 and the roadmap evidence sources |
+| R7 | Spec | Traceability | Themes A–D were not individually labeled in the disposition table | Fixed — theme mapping added above |
+
+Regression after fixes: full suite 218/218 OK (docs-only diff; production
+tree byte-identical to `0da2265`).
 
 ## Proposed closeout issues (texts; created at owner acceptance, not before)
 

@@ -50,7 +50,7 @@ Complete the post-slice gate's remaining step: `/domain-modeling` and `CONTEXT.m
 - **Architecture Baseline:** none published (Pre-Baseline; Slice 1 is implementation of accepted ADRs, not a baseline).
 - **Architecture Version:** none.
 - **Domain Model / CONTEXT.md:** not yet created (created lazily by `/domain-modeling`).
-- **ADRs:** 0001–0008 accepted (`docs/adr/`): three evidence layers + derivability; seven-state taxonomy + affirmative absence; explicit environment targeting; repository resource observation model; canonical target discovery + evidence addressing; taxonomy evidence rules; bounded execution waits; Security Control architectural seam (observation/applicability/operational-state/policy-expectation/conformance — "enabled properly" is a conformance conclusion, never a raw boolean).
+- **ADRs:** 0001–0008 accepted (`docs/adr/`): three evidence layers + derivability; seven-state taxonomy + affirmative absence; explicit environment targeting; repository resource observation model; canonical target discovery + evidence addressing; taxonomy evidence rules; bounded execution waits; Security Control architectural seam (ADR-0008; detail in the consolidation completed-work entry above).
 - **MADRs:** 0001–0004 accepted (`.ai/repository/methodology/adr/`); MADR-0004 (2026-07-30) fixes the canonical persistence model for review findings — architectural decision only, implementation vehicle deliberately unselected.
 - **Planning:** Security Controls capability roadmap (`docs/planning/security-controls.md`) — eight enumerated Security Control seams, slice assignments TBD at future decision phases.
 
