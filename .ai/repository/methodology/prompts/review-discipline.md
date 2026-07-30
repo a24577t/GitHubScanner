@@ -53,3 +53,7 @@ Explain the observed inconsistency.
 Clearly separate facts from recommendations.
 
 Do not present a preferred solution as though it is mandated by the repository unless an authoritative artifact explicitly requires it.
+
+Finding persistence
+
+Findings that survive to gate adjudication — accepted, dispositioned, deferred, or carried forward — are persisted per MADR-0004 (`../adr/0004-review-finding-persistence.md`): full content (statement, classification, evidence citation, disposition, provenance) in a committed artifact within the change set the gate adjudicates. A gate adjudicating no production diff carries its findings in its reconciliation change set. A finding fully resolved within the review cycle may persist as its traceable remediation footprint. The Status Artifact carries dispositions, never sole finding content.
