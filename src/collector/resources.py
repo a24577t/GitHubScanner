@@ -40,7 +40,29 @@ DEFAULT_BRANCH_PROTECTION = {
     "projection": PROTECTION_PROJECTION,
 }
 
-DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION,)
+RULESET_SUMMARY = (
+    ("id", ("field", "id")),
+    ("name", ("field", "name")),
+    ("target", ("field", "target")),
+    ("enforcement", ("field", "enforcement")),
+    ("created_at", ("field", "created_at")),
+)
+
+REPOSITORY_RULESETS = {
+    "name": "repository-rulesets",
+    # Observes the repository's own rulesets inventory - summary information
+    # only. Organization-owned rulesets are a different resource, excluded by
+    # descriptor coherence (includes_parents=false; exact parameter behavior
+    # pinned by the validation run). Emptiness is a value, never absence.
+    "path_template": "/repos/{full_name}/rulesets?includes_parents=false",
+    "shape": "object_array",
+    "required_inputs": (),
+    "absence_message": None,
+    "projection": (("count", ("length",)),
+                   ("rulesets", ("items", "id", RULESET_SUMMARY))),
+}
+
+DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION, REPOSITORY_RULESETS)
 
 
 def _validate_projection(name, entries, seen):

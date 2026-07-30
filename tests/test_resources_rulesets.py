@@ -127,5 +127,63 @@ class ArrayDslProjection(unittest.TestCase):
         self.assertIs(projected["entries"][0]["enforcement"], False)
 
 
+# GitHub-documented rulesets listing item shape, standard-repo fixture value
+# (one repository-owned ruleset); extra listing fields prove the projection
+# selects summary information only.
+RULESET_ITEM = {
+    "id": 42,
+    "name": "default-protection",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "GHScannerLab/standard-repo",
+    "enforcement": "active",
+    "node_id": "RRS_lACqUmVwb3NpdG9yec4tKzX0zgAERSw",
+    "created_at": "2026-07-01T00:00:00Z",
+    "updated_at": "2026-07-02T00:00:00Z",
+    "_links": {"self": {"href": "https://api.github.com/repos/GHScannerLab/standard-repo/rulesets/42"}},
+}
+
+
+class ShippedDescriptorContract(unittest.TestCase):
+    def test_repository_rulesets_is_second_in_table_order(self):
+        self.assertEqual([d["name"] for d in resources.DESCRIPTORS],
+                         ["default-branch-protection", "repository-rulesets"])
+
+    def test_repository_rulesets_request_contract(self):
+        descriptor = resources.REPOSITORY_RULESETS
+        # V11's request half: parent rulesets are excluded by descriptor
+        # coherence; the raw envelope URL carries the proof.
+        self.assertEqual(descriptor["path_template"],
+                         "/repos/{full_name}/rulesets?includes_parents=false")
+        self.assertEqual(descriptor["shape"], "object_array")
+        self.assertEqual(descriptor["required_inputs"], ())
+        self.assertIsNone(descriptor["absence_message"])
+
+    def test_projection_is_count_plus_ruleset_summaries_sorted_by_id(self):
+        projected = resources.project(
+            resources.REPOSITORY_RULESETS,
+            [RULESET_ITEM, {**RULESET_ITEM, "id": 7, "name": "tags",
+                            "target": "tag", "enforcement": "evaluate"}])
+        self.assertEqual(projected, {
+            "count": 2,
+            "rulesets": [
+                {"id": 7, "name": "tags", "target": "tag",
+                 "enforcement": "evaluate",
+                 "created_at": "2026-07-01T00:00:00Z"},
+                {"id": 42, "name": "default-protection", "target": "branch",
+                 "enforcement": "active",
+                 "created_at": "2026-07-01T00:00:00Z"},
+            ],
+        })
+
+    def test_empty_listing_projects_count_zero_never_absent(self):
+        # V07's projection half: emptiness is a value.
+        self.assertEqual(resources.project(resources.REPOSITORY_RULESETS, []),
+                         {"count": 0, "rulesets": []})
+
+    def test_shipped_table_with_both_descriptors_validates(self):
+        resources.validate_table(resources.DESCRIPTORS)
+
+
 if __name__ == "__main__":
     unittest.main()
