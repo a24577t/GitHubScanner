@@ -1,0 +1,27 @@
+{
+  "body_text": "{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}",
+  "envelope": {
+    "attempts": 1,
+    "branch": "main",
+    "captured_at": "2026-07-30T16:25:24Z",
+    "method": "GET",
+    "repo": {
+      "full_name": "GHScannerLab/archived-repo",
+      "id": 1312230165
+    },
+    "resource": "default-branch-protection",
+    "response_headers": {
+      "x-github-api-version-selected": "2022-11-28",
+      "x-github-media-type": "github.v3; format=json",
+      "x-ratelimit-limit": "5000",
+      "x-ratelimit-remaining": "4968",
+      "x-ratelimit-reset": "1785431974",
+      "x-ratelimit-used": "32"
+    },
+    "run_id": "20260730T162522Z",
+    "status": 404,
+    "url": "https://api.github.com/repos/GHScannerLab/archived-repo/branches/main/protection",
+    "wait_records": [],
+    "waits_seconds": []
+  }
+}

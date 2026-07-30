@@ -1,0 +1,102 @@
+{
+  "api_url": "https://api.github.com",
+  "execution": {
+    "captured": {
+      "first": "2026-07-30T16:25:22Z",
+      "last": "2026-07-30T16:25:26Z"
+    },
+    "requests": {
+      "attempts": 14,
+      "completed": 14,
+      "evidence_absent": 0,
+      "failed": 0,
+      "missing_input": 0,
+      "planned_drains": 6,
+      "planned_singles": 8,
+      "retained_records": 14
+    },
+    "terminations": {},
+    "waits": {
+      "max_single_wait_seconds": 0,
+      "primary-park": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "refused": 0,
+      "retry": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "retry-after": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "total_wait_seconds": 0
+    }
+  },
+  "failures": [],
+  "identity_login": "a24577t",
+  "listings": {
+    "repositories": {
+      "complete": true,
+      "items": 5,
+      "pages": 1
+    }
+  },
+  "org": "GHScannerLab",
+  "rate_limit": {
+    "occurrences": 0,
+    "total_seconds": 0
+  },
+  "resource_states": {
+    "meta": "collected",
+    "org": "collected",
+    "repositories": "collected",
+    "user": "collected"
+  },
+  "resources": {
+    "default-branch-protection": {
+      "reason_counts": {
+        "absence-message-matched": 3,
+        "absence-rule-unmatched-404": 1,
+        "collected": 1
+      },
+      "state": "absent",
+      "state_counts": {
+        "absent": 3,
+        "collected": 1,
+        "inaccessible": 1
+      },
+      "waits": {
+        "count": 0,
+        "total_seconds": 0
+      }
+    },
+    "repository-rulesets": {
+      "reason_counts": {
+        "collected": 5
+      },
+      "state": "collected",
+      "state_counts": {
+        "collected": 5
+      },
+      "waits": {
+        "count": 0,
+        "total_seconds": 0
+      }
+    }
+  },
+  "run_id": "20260730T162522Z",
+  "state_counts": {
+    "absent": 0,
+    "collected": 4,
+    "failed": 0,
+    "inaccessible": 0,
+    "incomplete": 0,
+    "unknown": 0,
+    "unsupported": 0
+  }
+}
