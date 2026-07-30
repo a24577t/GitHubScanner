@@ -18,6 +18,15 @@ def protection_path(i, branch="main"):
     return f"/repos/acme/repo-{i}/branches/{branch}/protection"
 
 
+def rulesets_path(i):
+    return f"/repos/acme/repo-{i}/rulesets"
+
+
+def rulesets_empty(*ids):
+    """Scripted empty rulesets listings (the fixture default: V07)."""
+    return {rulesets_path(i): [response(200, [])] for i in ids}
+
+
 def org_script(repos, **endpoints):
     return {
         "/user": [USER_OK], "/meta": [META_OK], "/orgs/acme": [ORG_OK],
@@ -38,6 +47,7 @@ class ScaffoldExactness(unittest.TestCase):
             [repo(2), repo(1)],
             **{protection_path(1): [response(200, PROTECTION_BODY)],
                protection_path(2): [response(404, ABSENCE_BODY)]},
+            **rulesets_empty(1, 2),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -46,7 +56,9 @@ class ScaffoldExactness(unittest.TestCase):
             self.assertEqual(raw_files(out), [
                 "meta.json", "org.json", "repos.page-1.json",
                 "repos/1-repo-1/default-branch-protection.json",
+                "repos/1-repo-1/repository-rulesets.page-1.json",
                 "repos/2-repo-2/default-branch-protection.json",
+                "repos/2-repo-2/repository-rulesets.page-1.json",
                 "user.json",
             ])
             record = json.loads(
@@ -136,10 +148,13 @@ class MissingRequiredInput(unittest.TestCase):
 
     def test_unusable_default_branch_values_are_missing_not_repaired(self):
         # Ratified refinement (E1 Q2): None / empty / non-string inputs are
-        # missing — never coerced into a request path.
+        # missing — never coerced into a request path. Descriptor coexistence
+        # (T8): rulesets need no input, so those drains still observe both
+        # repositories while protection gets no request and no artifact.
         script = org_script(
             [{**repo(1), "default_branch": ""},
              {**repo(2), "default_branch": None}],
+            **rulesets_empty(1, 2),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -149,7 +164,8 @@ class MissingRequiredInput(unittest.TestCase):
                 [],
             )
             self.assertEqual([f for f in raw_files(out) if f.startswith("repos/")],
-                             [])
+                             ["repos/1-repo-1/repository-rulesets.page-1.json",
+                              "repos/2-repo-2/repository-rulesets.page-1.json"])
 
 
 class IneligibleItems(unittest.TestCase):
@@ -162,6 +178,7 @@ class IneligibleItems(unittest.TestCase):
              {**repo(2), "full_name": "not-owner-name"},
              repo(3)],
             **{protection_path(3): [response(200, PROTECTION_BODY)]},
+            **rulesets_empty(3),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -172,7 +189,8 @@ class IneligibleItems(unittest.TestCase):
             )
             self.assertEqual(
                 [f for f in raw_files(out) if f.startswith("repos/")],
-                ["repos/3-repo-3/default-branch-protection.json"],
+                ["repos/3-repo-3/default-branch-protection.json",
+                 "repos/3-repo-3/repository-rulesets.page-1.json"],
             )
             observed = json.loads(
                 (out / "observed" / "repositories.json").read_text(encoding="utf-8")
@@ -250,6 +268,7 @@ class TokenSecrecyOverFanoutArtifacts(unittest.TestCase):
             [repo(1), repo(2)],
             **{protection_path(1): [response(200, PROTECTION_BODY)],
                protection_path(2): [response(404, ABSENCE_BODY)]},
+            **rulesets_empty(1, 2),
         )
         with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -263,7 +282,8 @@ class TokenSecrecyOverFanoutArtifacts(unittest.TestCase):
                     self.assertNotIn(token_bytes, artifact.read_bytes(),
                                      f"token leaked into {artifact}")
             fanout = [p for p in out.rglob("repos/*/*.json")]
-            self.assertEqual(len(fanout), 2, "both fan-out artifacts scanned")
+            self.assertEqual(len(fanout), 4,
+                             "all fan-out artifacts scanned (two descriptors)")
             self.assertGreater(scanned, len(fanout))
             self.assertNotIn(TOKEN, result.stdout)
             self.assertNotIn(TOKEN, result.stderr)

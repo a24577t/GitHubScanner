@@ -5,7 +5,8 @@ _NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 _PLACEHOLDER = re.compile(r"\{([^{}]+)\}")
 # Slice 1 taxonomy shape vocabulary; "object_array" identifies a paginated listing drain.
 _SHAPES = frozenset({"object", "object_array"})
-_SOURCE_KINDS = frozenset({"input", "field", "enabled", "count", "object"})
+_SOURCE_KINDS = frozenset(
+    {"input", "field", "enabled", "count", "object", "length", "items"})
 
 PROTECTION_PROJECTION = (
     ("branch", ("input", "default_branch")),
@@ -39,7 +40,29 @@ DEFAULT_BRANCH_PROTECTION = {
     "projection": PROTECTION_PROJECTION,
 }
 
-DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION,)
+RULESET_SUMMARY = (
+    ("id", ("field", "id")),
+    ("name", ("field", "name")),
+    ("target", ("field", "target")),
+    ("enforcement", ("field", "enforcement")),
+    ("created_at", ("field", "created_at")),
+)
+
+REPOSITORY_RULESETS = {
+    "name": "repository-rulesets",
+    # Observes the repository's own rulesets inventory - summary information
+    # only. Organization-owned rulesets are a different resource, excluded by
+    # descriptor coherence (includes_parents=false; exact parameter behavior
+    # pinned by the validation run). Emptiness is a value, never absence.
+    "path_template": "/repos/{full_name}/rulesets?includes_parents=false",
+    "shape": "object_array",
+    "required_inputs": (),
+    "absence_message": None,
+    "projection": (("count", ("length",)),
+                   ("rulesets", ("items", "id", RULESET_SUMMARY))),
+}
+
+DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION, REPOSITORY_RULESETS)
 
 
 def _validate_projection(name, entries, seen):
@@ -53,6 +76,12 @@ def _validate_projection(name, entries, seen):
         if kind not in _SOURCE_KINDS:
             raise ValueError(f"{name}: unknown projection source kind {kind!r}")
         if kind == "object":
+            _validate_projection(name, source[2], set())
+        if kind == "items":
+            if not isinstance(source[1], str) or not source[1]:
+                raise ValueError(f"{name}: items sort key must be a non-empty string")
+            if not source[2]:
+                raise ValueError(f"{name}: items projection must be a non-empty sequence")
             _validate_projection(name, source[2], set())
 
 
@@ -103,12 +132,32 @@ validate_table(DESCRIPTORS)
 UNKNOWN = "unknown"
 
 
+def _item_key(item, key_field):
+    """Deterministic item ordering: integer keys ascending, then everything
+    else by string form (the repositories.json sort precedent); ties keep
+    source order via sort stability."""
+    key = item.get(key_field) if isinstance(item, dict) else None
+    if isinstance(key, int):
+        return (False, key)
+    return (True, str(key))
+
+
 def _value(source, mapping, inputs):
     """Undetermined values are 'unknown'; False and 0 are values, never unknown."""
     kind = source[0]
     if kind == "input":
         value = inputs.get(source[1]) if isinstance(inputs, dict) else None
         return UNKNOWN if value is None else value
+    if kind == "length":
+        return len(mapping) if isinstance(mapping, list) else UNKNOWN
+    if kind == "items":
+        if not isinstance(mapping, list):
+            return UNKNOWN
+        return [
+            {field: _value(entry, item, inputs) for field, entry in source[2]}
+            for item in sorted(mapping,
+                               key=lambda item: _item_key(item, source[1]))
+        ]
     value = mapping.get(source[1]) if isinstance(mapping, dict) else None
     if kind == "field":
         return UNKNOWN if value is None else value

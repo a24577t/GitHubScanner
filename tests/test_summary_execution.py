@@ -212,18 +212,20 @@ class PlannedVersusAttempts(unittest.TestCase):
             failing = record(500, {"message": "boom"}, attempts=3)
             # repo-2's protection artifact is deliberately absent: the
             # recorded-collection-failure trace keeps planned != attempts.
+            # Planned drains: the inventory plus one rulesets drain per
+            # target (T8); both rulesets drains are absent in this tree.
             write_tree(out, [page_record([repo_item(1), repo_item(2)])],
                        [("1-repo-1", "default-branch-protection.json",
                          failing)])
             requests = execution(out)["requests"]
             self.assertEqual(requests["planned_singles"], 5)
-            self.assertEqual(requests["planned_drains"], 1)
+            self.assertEqual(requests["planned_drains"], 3)
             self.assertEqual(requests["missing_input"], 0)
             self.assertEqual(requests["retained_records"], 5)
             self.assertEqual(requests["attempts"], 7)
             self.assertEqual(requests["completed"], 4)
             self.assertEqual(requests["failed"], 1)
-            self.assertEqual(requests["evidence_absent"], 1)
+            self.assertEqual(requests["evidence_absent"], 3)
 
     def test_missing_input_receives_no_planned_request(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -233,7 +235,10 @@ class PlannedVersusAttempts(unittest.TestCase):
             requests = execution(out)["requests"]
             self.assertEqual(requests["planned_singles"], 3)
             self.assertEqual(requests["missing_input"], 1)
-            self.assertEqual(requests["evidence_absent"], 0)
+            # The input-free rulesets drain stays planned for the same
+            # target (descriptor coexistence, T8) and is absent here.
+            self.assertEqual(requests["planned_drains"], 2)
+            self.assertEqual(requests["evidence_absent"], 1)
 
     def test_rate_limit_marked_final_record_counts_failed(self):
         with tempfile.TemporaryDirectory() as tmp:

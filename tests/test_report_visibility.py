@@ -15,6 +15,7 @@ from test_derive_resources import (
     PROTECTION_BODY, RUN, page_record, protection, record, repo_item,
     write_tree,
 )
+from test_derive_rulesets import rs_file
 
 
 def summary_for(repos, resources):
@@ -78,6 +79,22 @@ class ReportAggregates(unittest.TestCase):
                          canonical_dumps(large).count("\n"))
         self.assertEqual(render_markdown(small).count("\n"),
                          render_markdown(large).count("\n"))
+
+
+class RulesetsAggregates(unittest.TestCase):
+    def test_rulesets_report_row_is_bounded_and_rendered(self):
+        # T8 report effect (V06/V07): the second descriptor surfaces as one
+        # bounded aggregate row per format, never per-ruleset content.
+        summary = summary_for([repo_item(1)], [rs_file(1, 1, [])])
+        report = build_report("https://api.example", "acme", RUN, "op",
+                              summary)
+        block = report["resources"]["repository-rulesets"]
+        self.assertEqual(sorted(block), ["reason_counts", "state",
+                                         "state_counts", "waits"])
+        self.assertEqual(block["state"], "collected")
+        self.assertEqual(block["state_counts"], {"collected": 1})
+        markdown = render_markdown(report)
+        self.assertIn("| repository-rulesets | collected |", markdown)
 
 
 class MarkdownWaitVisibility(unittest.TestCase):
