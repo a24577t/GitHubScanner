@@ -130,6 +130,28 @@ class ScanTolerance(unittest.TestCase):
                              "2026-01-01T00:00:00Z")
 
 
+class HugeIntegers(unittest.TestCase):
+    def test_arbitrary_precision_integers_never_crash(self):
+        # json.loads parses 400-digit integers; they are finite numbers and
+        # read as found — never a float conversion, never an OverflowError.
+        huge = 10 ** 400
+        crafted = record(200, PROTECTION_BODY, wait_records=[
+            {"category": "retry", "outcome": "retried",
+             "requested_seconds": huge, "elapsed_seconds": 0},
+        ])
+        crafted["envelope"]["attempts"] = huge
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)])],
+                       [("1-repo-1", "default-branch-protection.json",
+                         crafted)])
+            block = execution(out)
+            self.assertEqual(block["waits"]["retry"]["requested_seconds"],
+                             huge)
+            self.assertEqual(block["waits"]["max_single_wait_seconds"], huge)
+            self.assertEqual(block["requests"]["attempts"], huge + 4)
+
+
 class PlannedVersusAttempts(unittest.TestCase):
     def test_planned_attempts_completed_failed_evidence_absent(self):
         with tempfile.TemporaryDirectory() as tmp:

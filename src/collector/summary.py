@@ -21,9 +21,14 @@ SINGLE_ARTIFACTS = ("user.json", "meta.json", "org.json")
 
 def _number(value):
     """A retained numeric figure, or 0 — scan tolerance is type-deep: junk
-    values contribute nothing and never derail derivation."""
-    if (isinstance(value, (int, float)) and not isinstance(value, bool)
-            and math.isfinite(value)):
+    values contribute nothing and never derail derivation. Integers are
+    always finite (isfinite would overflow converting huge ones to float);
+    only floats need the NaN/Infinity gate."""
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
         return value
     return 0
 
