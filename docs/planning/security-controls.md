@@ -204,3 +204,10 @@ surfaces, no blocking architecture decisions beyond #2/#3 facts and
 permissions). **Later candidates** — Code Scanning (combination semantics
 first), Security Configuration (#26 first). Conformance planes for any control
 follow the policy-definition decision. This document schedules nothing.
+
+Current proposal status: the Secret Scanning control family (Secret Scanning
++ Secret Scanning Push Protection) is the frozen Slice 3 proposal pending the
+Architecture Grill — input materials at
+[slice-3-architecture-grill.md](slice-3-architecture-grill.md). The roadmap
+rows above stay `TBD`/`Planned` until an owner-approved verdict and accepted
+specification assign them; every control remains an independent seam.
