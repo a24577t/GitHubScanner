@@ -8,6 +8,7 @@ additive, ADR-0009's consequence); derivation is deterministic from raw
 evidence alone through the canonical serializer.
 """
 import json
+import shutil
 import tempfile
 import unittest
 import unittest.mock as mock
@@ -78,6 +79,69 @@ class SliceTreeCompatibility(unittest.TestCase):
             self.assertIn("controls/secret-scanning.json", after_docs)
             del after_docs["controls/secret-scanning.json"]
             self.assertEqual(before_docs, after_docs)
+
+
+class CommittedRunTrees(unittest.TestCase):
+    """V60 against the actually committed validation-run trees: deriving
+    them with the T3 engine leaves every committed observed document
+    byte-identical and adds only honest evidence-unavailable control
+    conclusions (no dedicated-request evidence exists in either run)."""
+
+    RUNS = Path(__file__).resolve().parent.parent / "docs" / "validation" / "runs"
+
+    def rederive(self, run_name):
+        committed = self.RUNS / run_name
+        run_id = next((committed / "evidence" / "raw").iterdir()).name
+        original = {path.name: path.read_bytes()
+                    for path in sorted((committed / "observed").glob("*.json"))}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            shutil.copytree(committed / "evidence", out / "evidence")
+            derive_observed(out, run_id=run_id)
+            rederived = {path.name: path.read_bytes()
+                         for path in sorted((out / "observed").glob("*.json"))}
+            doc = json.loads(
+                (out / "observed" / "controls" / "secret-scanning.json")
+                .read_text(encoding="utf-8"))
+        return original, rederived, doc
+
+    def assert_v60(self, run_name):
+        original, rederived, doc = self.rederive(run_name)
+        for name, content in original.items():
+            self.assertEqual(rederived[name], content, name)
+        self.assertTrue(doc["repositories"])
+        for entry in doc["repositories"]:
+            self.assertEqual(
+                (entry["operational_state"], entry["operational_state_reason"],
+                 entry["applicability"], entry["applicability_reason"],
+                 entry["evidence"]["reason"]),
+                ("unknown", "evidence-unavailable", "applicability-unknown",
+                 "evidence-unavailable", "raw-evidence-absent"))
+
+    def test_v60_committed_slice1_run_tree(self):
+        self.assert_v60("20260725-GHScannerLab")
+
+    def test_v60_committed_slice2_run_tree(self):
+        self.assert_v60("20260730-GHScannerLab")
+
+
+class DegradedCoverage(unittest.TestCase):
+    def test_non_collected_inventory_state_carried_verbatim(self):
+        # Coverage qualifies, never converts: a capped listing's
+        # "incomplete" inventory state reaches the control document
+        # untouched while the usable page's targets still count.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)], incomplete=True)],
+                       [sa_file(1, 200, sa_body())])
+            derive_observed(out, run_id=RUN)
+            doc = json.loads(
+                (out / "observed" / "controls" / "secret-scanning.json")
+                .read_text(encoding="utf-8"))
+            self.assertEqual(doc["coverage"],
+                             {"basis": "eligible-discovered-repositories",
+                              "inventory_state": "incomplete",
+                              "eligible_target_count": 1})
 
 
 class PairingInvariant(unittest.TestCase):
