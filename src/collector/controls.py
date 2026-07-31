@@ -76,17 +76,25 @@ def _projected_status(control, entry):
     return value
 
 
-def applicability(control, entry):
+def applicability(control, entry, resolved=None):
     """(state, reason) on the Applicability plane — the spec's
     first-match-wins rules for the control's declared kind. An affirmatively
     enabled control self-evidences applicability (rule 1, both kinds;
-    deliberately asymmetric — disabled establishes nothing); the visibility
+    deliberately asymmetric — disabled establishes nothing). The visibility
     kind then applies on exact "public", holds plan-gated visibilities as
-    unknown, and degrades everything undetermined. Never coerced, never
-    guessed."""
+    unknown, and degrades everything undetermined. The chain kind keys on
+    the chained control's already-evaluated applicability (``resolved``:
+    conclusions by control name, produced in table order), on availability
+    and never enablement. Never coerced, never guessed."""
     collected = entry.get("state") == "collected"
     if collected and _projected_status(control, entry) == "enabled":
         return "applicable", "affirmative-enabled-status"
+    kind = control["applicability"]
+    if isinstance(kind, tuple):
+        target = kind[1]
+        if isinstance(resolved, dict) and resolved.get(target) == "applicable":
+            return "applicable", f"{target}-available"
+        return "applicability-unknown", f"{target}-availability-unknown"
     if not collected:
         return "applicability-unknown", "evidence-unavailable"
     visibility = entry.get("visibility")
