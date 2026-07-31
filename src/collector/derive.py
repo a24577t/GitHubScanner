@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from collector import projections, resources, summary
+from collector import controls, projections, resources, summary
 from collector.serialize import write_canonical
 from collector.taxonomy import body_of, classify, usable_page
 
@@ -138,6 +138,55 @@ def _fanout_summary(run_id, raw_dir, page_records, inventory_state,
     return aggregates
 
 
+def _control_documents(table, documents):
+    """(name, document) per control — assembly from derived resource-document
+    entries only (ADR-0009 element 3): every conclusion cites its retained
+    descriptor evidence; the top-level state is the Slice 1 listing rule over
+    the cited evidence states (evidence-plane rollup only); coverage is the
+    descriptor document's block verbatim. Controls evaluate in table order,
+    each target's applicability conclusions accumulating in ``resolved`` so a
+    chained control receives its predecessor's conclusion — T2's validation
+    guarantees the predecessor precedes it, so one pass is deterministic and
+    a future chained definition needs no change here (T5's architectural AC).
+    """
+    resolved = {}
+    for control in table:
+        source = documents.get(control["descriptor"])
+        if source is None:
+            # Unreachable when the control and descriptor tables agree
+            # (import-time validation pins every shipped control's descriptor
+            # to the shipped table; derivation covers the whole table): a
+            # divergent pairing is an invariant violation, surfaced loudly.
+            raise ValueError(
+                f"control {control['name']!r} references descriptor "
+                f"{control['descriptor']!r} absent from the derived table")
+        entries = []
+        for entry in source["repositories"]:
+            conclusions = resolved.setdefault(entry["id"], {})
+            applicability, applicability_reason = controls.applicability(
+                control, entry, conclusions)
+            operational, operational_reason = controls.operational_state(
+                control, entry)
+            conclusions[control["name"]] = applicability
+            entries.append({
+                "id": entry["id"], "full_name": entry["full_name"],
+                "applicability": applicability,
+                "applicability_reason": applicability_reason,
+                "operational_state": operational,
+                "operational_state_reason": operational_reason,
+                "evidence": {"resource": control["descriptor"],
+                             "state": entry["state"],
+                             "reason": entry["reason"]},
+            })
+        yield control["name"], {
+            "run_id": source["run_id"],
+            "state": projections.listing_state(
+                [entry["evidence"]["state"] for entry in entries]),
+            "coverage": source["coverage"],
+            "repositories": entries,
+        }
+
+
 def derive_observed(out_dir, run_id=None):
     out_dir = Path(out_dir)
     run_id = run_id or latest_run_id(out_dir)
@@ -176,11 +225,15 @@ def derive_observed(out_dir, run_id=None):
          "run_id": run_id, "state": listing_state},
     )
     conflicted = projections.conflicted_ids(projections.structural_report(raw_dir))
+    documents = {}
     for descriptor in resources.DESCRIPTORS:
+        document = projections.resource_document(run_id, raw_dir, descriptor,
+                                                 page_records, listing_state,
+                                                 conflicted)
+        documents[descriptor["name"]] = document
         write_canonical(
-            out_dir / "observed" / (descriptor["name"] + ".json"),
-            projections.resource_document(run_id, raw_dir, descriptor,
-                                          page_records, listing_state,
-                                          conflicted),
-        )
+            out_dir / "observed" / (descriptor["name"] + ".json"), document)
+    for name, document in _control_documents(controls.CONTROLS, documents):
+        write_canonical(
+            out_dir / "observed" / "controls" / (name + ".json"), document)
     return run_id
