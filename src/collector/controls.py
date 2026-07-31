@@ -64,3 +64,31 @@ def validate_controls(table):
 
 
 validate_controls(CONTROLS)
+
+
+def _projected_status(control, entry):
+    """The control's projected status field read verbatim from the derived
+    entry; traversal over a missing or non-dict step yields None (an
+    undetermined read), never an exception and never a coercion."""
+    value = entry
+    for key in control["status_path"]:
+        value = value.get(key) if isinstance(value, dict) else None
+    return value
+
+
+def operational_state(control, entry):
+    """(state, reason) on the Operational State plane — the spec's five
+    first-match-wins rules over one derived descriptor entry. Disablement
+    only from an affirmative status; ambiguity degrades to unknown
+    (ADR-0006's direction lifted to the control plane)."""
+    state = entry.get("state")
+    if state == "collected":
+        status = _projected_status(control, entry)
+        if status == "enabled":
+            return "enabled", "affirmative-status-enabled"
+        if status == "disabled":
+            return "disabled", "affirmative-status-disabled"
+        return "unknown", "status-undetermined"
+    if state == "inaccessible":
+        return "inaccessible", "evidence-inaccessible"
+    return "unknown", "evidence-unavailable"
