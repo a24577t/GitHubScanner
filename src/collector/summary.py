@@ -43,15 +43,21 @@ def control_aggregates(documents):
     state ever enters the aggregates (ADR-0009)."""
     aggregates = {}
     for name, document in documents.items():
+        if not isinstance(name, str):
+            continue
         block = {"applicability_counts": {},
                  "applicability_reason_counts": {},
                  "operational_state_counts": {},
                  "operational_state_reason_counts": {}}
-        for entry in document["repositories"]:
-            _plane(block, "applicability", entry["applicability"],
-                   entry["applicability_reason"], APPLICABILITY_STATES)
-            _plane(block, "operational_state", entry["operational_state"],
-                   entry["operational_state_reason"], OPERATIONAL_STATES)
+        entries = (document.get("repositories")
+                   if isinstance(document, dict) else None)
+        for entry in (entries if isinstance(entries, list) else ()):
+            if not isinstance(entry, dict):
+                continue
+            _plane(block, "applicability", entry.get("applicability"),
+                   entry.get("applicability_reason"), APPLICABILITY_STATES)
+            _plane(block, "operational_state", entry.get("operational_state"),
+                   entry.get("operational_state_reason"), OPERATIONAL_STATES)
         aggregates[name] = block
     return aggregates
 
@@ -59,11 +65,15 @@ def control_aggregates(documents):
 def _plane(block, plane, state, reason, allowed):
     """One plane conclusion into its two count families. The (state, reason)
     pair is emitted atomically by the control layer, so it gates as a unit:
-    a state outside the closed vocabulary suppresses the pair."""
-    if state not in allowed:
+    a state outside the closed vocabulary suppresses the pair. A valid state
+    paired with a non-string reason still counts as a state figure — the
+    junk reason alone contributes nothing (T6/T7 scan-tolerance rule)."""
+    if not isinstance(state, str) or state not in allowed:
         return
     bucket = block[plane + "_counts"]
     bucket[state] = bucket.get(state, 0) + 1
+    if not isinstance(reason, str):
+        return
     bucket = block[plane + "_reason_counts"]
     bucket[reason] = bucket.get(reason, 0) + 1
 

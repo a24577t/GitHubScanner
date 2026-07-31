@@ -134,5 +134,94 @@ class AggregateShape(unittest.TestCase):
         self.assertNotIn('"applicable": 0', dumped)
 
 
+EMPTY = {family: {} for family in FAMILIES}
+
+
+class TypeDeepTolerance(unittest.TestCase):
+    # The T7 lesson at this seam: malformed control-document inputs never
+    # crash aggregation, junk contributes nothing, and valid conclusions
+    # aggregate identically with junk present or absent.
+
+    def test_malformed_documents_never_crash_and_count_nothing(self):
+        for junk in (None, [], "junk", 5, True, {}, {"repositories": None},
+                     {"repositories": {}}, {"repositories": "x"},
+                     {"repositories": 7}):
+            with self.subTest(document=junk):
+                self.assertEqual(control_aggregates({"secret-scanning": junk}),
+                                 {"secret-scanning": EMPTY})
+
+    def test_non_dict_entries_are_skipped(self):
+        document = control_document(
+            [None, 7, "entry", [], True, entry(1)])
+        block = control_aggregates({"secret-scanning": document})
+        self.assertEqual(block["secret-scanning"]["operational_state_counts"],
+                         {"disabled": 1})
+
+    def test_entries_missing_conclusion_fields_contribute_nothing(self):
+        document = control_document(
+            [{"id": 1, "full_name": "acme/repo-1"}, entry(2)])
+        block = control_aggregates({"secret-scanning": document})
+        self.assertEqual(block["secret-scanning"]["applicability_counts"],
+                         {"applicable": 1})
+
+    def test_invalid_state_types_suppress_the_pair(self):
+        # Unhashable and non-string states can never enter a closed
+        # vocabulary: the whole (state, reason) pair is discarded.
+        junk_states = ({}, ["applicable"], None, True, 5)
+        document = control_document(
+            [entry(i, applicability=junk, operational_state=junk)
+             for i, junk in enumerate(junk_states, start=1)] + [entry(9)])
+        block = control_aggregates({"secret-scanning": document})
+        self.assertEqual(block["secret-scanning"],
+                         {"applicability_counts": {"applicable": 1},
+                          "applicability_reason_counts":
+                              {"public-repository-visibility": 1},
+                          "operational_state_counts": {"disabled": 1},
+                          "operational_state_reason_counts":
+                              {"affirmative-status-disabled": 1}})
+
+    def test_invalid_reason_types_count_the_state_only(self):
+        # A valid state whose paired reason is junk still counts as a state
+        # figure; the junk reason never becomes a count key.
+        junk_reasons = ({}, [], None, True, 5)
+        document = control_document(
+            [entry(i, applicability_reason=junk, operational_state_reason=junk)
+             for i, junk in enumerate(junk_reasons, start=1)])
+        block = control_aggregates({"secret-scanning": document})
+        self.assertEqual(block["secret-scanning"],
+                         {"applicability_counts": {"applicable": 5},
+                          "applicability_reason_counts": {},
+                          "operational_state_counts": {"disabled": 5},
+                          "operational_state_reason_counts": {}})
+
+    def test_non_string_control_names_are_skipped(self):
+        aggregates = control_aggregates(
+            {5: control_document([entry(1)]),
+             "secret-scanning": control_document([entry(2)])})
+        self.assertEqual(sorted(aggregates), ["secret-scanning"])
+
+    def test_junk_never_contaminates_valid_aggregates(self):
+        valid = [entry(1), entry(2, operational_state="enabled",
+                                 operational_state_reason=
+                                 "affirmative-status-enabled")]
+        junk = [None, "x", {"applicability": {}, "operational_state": []},
+                entry(3, applicability="not-applicable",
+                      operational_state="unavailable"),
+                entry(4, applicability_reason=7, operational_state_reason={})]
+        clean = control_aggregates(
+            {"secret-scanning": control_document(list(valid))})
+        polluted = control_aggregates(
+            {"secret-scanning": control_document(valid + junk)})
+        # Entry 4's valid states still count; every junk figure vanishes.
+        expected = {family: dict(counts) for family, counts in
+                    clean["secret-scanning"].items()}
+        expected["applicability_counts"]["applicable"] += 1
+        expected["operational_state_counts"]["disabled"] += 1
+        self.assertEqual(polluted["secret-scanning"], expected)
+        self.assertEqual(canonical_dumps(clean),
+                         canonical_dumps(control_aggregates(
+                             {"secret-scanning": control_document(valid)})))
+
+
 if __name__ == "__main__":
     unittest.main()
