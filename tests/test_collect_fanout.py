@@ -27,6 +27,26 @@ def rulesets_empty(*ids):
     return {rulesets_path(i): [response(200, [])] for i in ids}
 
 
+def security_path(i):
+    return f"/repos/acme/repo-{i}"
+
+
+def security_body(i):
+    return {
+        "id": i, "name": f"repo-{i}", "full_name": f"acme/repo-{i}",
+        "visibility": "public",
+        "security_and_analysis": {
+            "secret_scanning": {"status": "disabled"},
+            "secret_scanning_push_protection": {"status": "disabled"},
+        },
+    }
+
+
+def security_ok(*ids):
+    """Scripted dedicated repository GETs (the fixture default: disabled)."""
+    return {security_path(i): [response(200, security_body(i))] for i in ids}
+
+
 def org_script(repos, **endpoints):
     return {
         "/user": [USER_OK], "/meta": [META_OK], "/orgs/acme": [ORG_OK],
@@ -48,6 +68,7 @@ class ScaffoldExactness(unittest.TestCase):
             **{protection_path(1): [response(200, PROTECTION_BODY)],
                protection_path(2): [response(404, ABSENCE_BODY)]},
             **rulesets_empty(1, 2),
+            **security_ok(1, 2),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -57,8 +78,10 @@ class ScaffoldExactness(unittest.TestCase):
                 "meta.json", "org.json", "repos.page-1.json",
                 "repos/1-repo-1/default-branch-protection.json",
                 "repos/1-repo-1/repository-rulesets.page-1.json",
+                "repos/1-repo-1/security-and-analysis.json",
                 "repos/2-repo-2/default-branch-protection.json",
                 "repos/2-repo-2/repository-rulesets.page-1.json",
+                "repos/2-repo-2/security-and-analysis.json",
                 "user.json",
             ])
             record = json.loads(
@@ -155,6 +178,7 @@ class MissingRequiredInput(unittest.TestCase):
             [{**repo(1), "default_branch": ""},
              {**repo(2), "default_branch": None}],
             **rulesets_empty(1, 2),
+            **security_ok(1, 2),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -165,7 +189,9 @@ class MissingRequiredInput(unittest.TestCase):
             )
             self.assertEqual([f for f in raw_files(out) if f.startswith("repos/")],
                              ["repos/1-repo-1/repository-rulesets.page-1.json",
-                              "repos/2-repo-2/repository-rulesets.page-1.json"])
+                              "repos/1-repo-1/security-and-analysis.json",
+                              "repos/2-repo-2/repository-rulesets.page-1.json",
+                              "repos/2-repo-2/security-and-analysis.json"])
 
 
 class IneligibleItems(unittest.TestCase):
@@ -179,6 +205,7 @@ class IneligibleItems(unittest.TestCase):
              repo(3)],
             **{protection_path(3): [response(200, PROTECTION_BODY)]},
             **rulesets_empty(3),
+            **security_ok(3),
         )
         with serve(script) as (base, recorder), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -190,7 +217,8 @@ class IneligibleItems(unittest.TestCase):
             self.assertEqual(
                 [f for f in raw_files(out) if f.startswith("repos/")],
                 ["repos/3-repo-3/default-branch-protection.json",
-                 "repos/3-repo-3/repository-rulesets.page-1.json"],
+                 "repos/3-repo-3/repository-rulesets.page-1.json",
+                 "repos/3-repo-3/security-and-analysis.json"],
             )
             observed = json.loads(
                 (out / "observed" / "repositories.json").read_text(encoding="utf-8")
@@ -269,6 +297,7 @@ class TokenSecrecyOverFanoutArtifacts(unittest.TestCase):
             **{protection_path(1): [response(200, PROTECTION_BODY)],
                protection_path(2): [response(404, ABSENCE_BODY)]},
             **rulesets_empty(1, 2),
+            **security_ok(1, 2),
         )
         with serve(script) as (base, _), tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
@@ -282,8 +311,8 @@ class TokenSecrecyOverFanoutArtifacts(unittest.TestCase):
                     self.assertNotIn(token_bytes, artifact.read_bytes(),
                                      f"token leaked into {artifact}")
             fanout = [p for p in out.rglob("repos/*/*.json")]
-            self.assertEqual(len(fanout), 4,
-                             "all fan-out artifacts scanned (two descriptors)")
+            self.assertEqual(len(fanout), 6,
+                             "all fan-out artifacts scanned (three descriptors)")
             self.assertGreater(scanned, len(fanout))
             self.assertNotIn(TOKEN, result.stdout)
             self.assertNotIn(TOKEN, result.stderr)
