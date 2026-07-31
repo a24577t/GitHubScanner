@@ -11,7 +11,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from collector import resources
+from collector import controls, resources
 from collector import collect as collect_module
 from fake_github import response, serve
 from test_collect import META_OK, ORG_OK, RUN_ID, USER_OK, repo
@@ -35,8 +35,12 @@ def drain_script(listing_responses):
 
 
 def run(base, out, max_pages=100):
+    # The synthetic-descriptor world has no controls: the control table is
+    # emptied alongside the replaced descriptor table (T3's loud pairing
+    # invariant — a control may only reference a derived descriptor).
     with mock.patch.object(resources, "DESCRIPTORS",
-                           (resources.DEFAULT_BRANCH_PROTECTION, FAKE_LISTING)):
+                           (resources.DEFAULT_BRANCH_PROTECTION, FAKE_LISTING)), \
+            mock.patch.object(controls, "CONTROLS", ()):
         return collect_module.run_collect(
             base, "acme", out, "tok-inproc", run_id=RUN_ID, max_pages=max_pages)
 

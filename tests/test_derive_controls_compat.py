@@ -13,7 +13,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from collector import controls
+from collector import controls, resources
 from collector.derive import derive_observed
 from test_derive_resources import (
     PROTECTION_BODY, RUN, page_record, protection, repo_item, write_tree,
@@ -78,6 +78,24 @@ class SliceTreeCompatibility(unittest.TestCase):
             self.assertIn("controls/secret-scanning.json", after_docs)
             del after_docs["controls/secret-scanning.json"]
             self.assertEqual(before_docs, after_docs)
+
+
+class PairingInvariant(unittest.TestCase):
+    def test_control_without_derived_descriptor_fails_loudly(self):
+        # S10 adjudication of the cycle-4 guard: a control whose evidence
+        # descriptor was not derived is an invariant violation (unreachable
+        # when the shipped tables agree - import-time validation pins them),
+        # surfaced as a loud ValueError, never a silent omission.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            slice2_tree(out)
+            with mock.patch.object(
+                    resources, "DESCRIPTORS",
+                    (resources.DEFAULT_BRANCH_PROTECTION,)):
+                with self.assertRaises(ValueError) as ctx:
+                    derive_observed(out, run_id=RUN)
+        self.assertIn("security-and-analysis", str(ctx.exception))
+        self.assertIn("secret-scanning", str(ctx.exception))
 
 
 class DeterministicRederivation(unittest.TestCase):

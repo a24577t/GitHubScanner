@@ -153,11 +153,13 @@ def _control_documents(table, documents):
     for control in table:
         source = documents.get(control["descriptor"])
         if source is None:
-            # Unreachable outside reduced descriptor tables (import-time
-            # validation pins every control's descriptor to the shipped
-            # table): a control whose evidence surface was not derived in
-            # this run cannot be observed, so no document is emitted.
-            continue
+            # Unreachable when the control and descriptor tables agree
+            # (import-time validation pins every shipped control's descriptor
+            # to the shipped table; derivation covers the whole table): a
+            # divergent pairing is an invariant violation, surfaced loudly.
+            raise ValueError(
+                f"control {control['name']!r} references descriptor "
+                f"{control['descriptor']!r} absent from the derived table")
         entries = []
         for entry in source["repositories"]:
             conclusions = resolved.setdefault(entry["id"], {})

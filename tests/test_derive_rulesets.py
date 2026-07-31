@@ -13,7 +13,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from collector import resources
+from collector import controls, resources
 from collector.derive import derive_observed
 from test_derive_resources import (
     PROTECTION_BODY, RUN, page_record, protection, record, repo_item,
@@ -143,7 +143,14 @@ class ExistingOutputsByteIdentity(unittest.TestCase):
             write_tree(out, [page_record([repo_item(1), repo_item(2)])],
                        [protection("1-repo-1", 200, PROTECTION_BODY),
                         rs_file(2, 1, [RULESET_ITEM])])
-            with mock.patch.object(resources, "DESCRIPTORS", table):
+            # The reduced-table world keeps only controls whose evidence
+            # descriptor it derives (T3's loud pairing invariant); the pre-T8
+            # world therefore has none.
+            names = {descriptor["name"] for descriptor in table}
+            with mock.patch.object(resources, "DESCRIPTORS", table), \
+                    mock.patch.object(controls, "CONTROLS", tuple(
+                        c for c in controls.CONTROLS
+                        if c["descriptor"] in names)):
                 derive_observed(out, run_id=RUN)
 
         with tempfile.TemporaryDirectory() as tmp:
