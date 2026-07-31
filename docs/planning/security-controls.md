@@ -42,8 +42,8 @@ operational state (ADR-0008).
 
 | Security Control | Planned | Slice | Status |
 |---|---|---|---|
-| Secret Scanning | ✓ | TBD | Planned |
-| Secret Scanning Push Protection | ✓ | TBD | Planned |
+| Secret Scanning | ✓ | 3 | Specification accepted |
+| Secret Scanning Push Protection | ✓ | 3 | Specification accepted |
 | Code Scanning | ✓ | TBD | Planned |
 | Dependabot Vulnerability Alerts | ✓ | TBD | Planned |
 | Dependabot Security Updates | ✓ | TBD | Planned |
@@ -205,9 +205,15 @@ permissions). **Later candidates** — Code Scanning (combination semantics
 first), Security Configuration (#26 first). Conformance planes for any control
 follow the policy-definition decision. This document schedules nothing.
 
-Current proposal status: the Secret Scanning control family (Secret Scanning
-+ Secret Scanning Push Protection) is the frozen Slice 3 proposal pending the
-Architecture Grill — input materials at
-[slice-3-architecture-grill.md](slice-3-architecture-grill.md). The roadmap
-rows above stay `TBD`/`Planned` until an owner-approved verdict and accepted
-specification assign them; every control remains an independent seam.
+Current status: the Secret Scanning control family is assigned to **Slice 3**
+— Architecture Grill verdict PASS WITH CONDITIONS approved at ⟦G-Verdict⟧
+(Decision S4-SLICE3-01, 2026-07-30); accepted specification:
+[vertical-slice-3-secret-scanning-control-family.md](../specifications/vertical-slice-3-secret-scanning-control-family.md)
+(canonical realization pattern: ADR-0009). The accepted Slice 3 subset
+excludes `unavailable` pending an affirmative discriminator (#2/#3) — the
+"expected subset" leads in the two secret-scanning sections above remain
+planning leads that the accepted specification supersedes for Slice 3. The
+cross-evidence-shape additivity proof of the control pattern is assigned to
+the next implemented roadmap control's slice. Grill input materials:
+[slice-3-architecture-grill.md](slice-3-architecture-grill.md). All other
+rows stay `TBD`/`Planned`; every control remains an independent seam.
