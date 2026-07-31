@@ -14,7 +14,7 @@ authority over GHScannerLab (accepted Slice 3 specification and matrix).
 | Secret Scanning | enabled | pre-existing |
 | Secret Scanning Push Protection | enabled | pre-existing |
 | Secret scanning — non-provider patterns | **disabled — plan-gated** | see constraint below |
-| Secret scanning — validity checks | disabled — **deferred by owner decision** | pending an explicit decision on partner validation / privacy |
+| Secret scanning — validity checks | disabled — **owner decision (2026-07-31)** | see repository policy below |
 | Dependabot vulnerability alerts | enabled | pre-existing |
 | Dependabot security updates | **enabled** | changed 2026-07-31 (owner-authorized) |
 | Dependency graph | enabled | public-repository default |
@@ -42,9 +42,19 @@ authority over GHScannerLab (accepted Slice 3 specification and matrix).
   (plan-gated fields, silent non-application) that the Slice 3 architecture
   degrades to `unknown` — recorded here as context only, never as
   validation evidence.
-- **Validity checks (owner-deferred):** enabling would transmit detected
-  token candidates to providers for liveness verification; deferred pending
-  an explicit owner privacy decision.
+- **Validity checks (owner-decided, 2026-07-31):** remain disabled by owner
+  choice — see the repository policy below. Enabling would transmit
+  detected token candidates to providers for liveness verification; the
+  owner assessed provider verification as unnecessary for this repository.
+
+## Repository policy — secret scanning (owner-recorded 2026-07-31)
+
+- Secret scanning provides detection and prevention.
+- Push protection remains enabled.
+- Validity checks remain disabled by owner choice.
+- Secret alerts are considered sufficient; credential validity is assessed
+  during repository-owner incident response rather than through provider
+  verification.
 
 ## Boundaries
 
