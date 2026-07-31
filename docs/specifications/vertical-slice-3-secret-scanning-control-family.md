@@ -11,8 +11,8 @@ at ⟦G-Accept⟧ via the Slice 3 acceptance PR). Governing decisions:
 [ADR-0006](../adr/0006-taxonomy-evidence-rules.md),
 [ADR-0007](../adr/0007-bounded-execution-waits.md),
 [ADR-0008](../adr/0008-security-control-model.md),
-[ADR-0009](../adr/0009-security-control-realization.md) (proposed with this
-specification). Grill input package:
+[ADR-0009](../adr/0009-security-control-realization.md) (accepted with this
+specification via the Slice 3 acceptance PR). Grill input package:
 [slice-3-architecture-grill.md](../planning/slice-3-architecture-grill.md).
 Normative validation matrix:
 [vertical-slice-3-validation-matrix.md](vertical-slice-3-validation-matrix.md).
