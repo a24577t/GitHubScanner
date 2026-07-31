@@ -97,6 +97,20 @@ The working approach is influenced by Matt Pocock's composable engineering-skill
 - When a discussion produces a repository action, refinement, or accepted recommendation, conclude by default with a complete response directed to the repository owner, suitable for immediate execution — unless Eric explicitly requests otherwise.
 - Prompts shall be concise, explicit, and compact. Minimize context usage. Eliminate unnecessary explanation, repetition, and conversational language. Preserve only information required for deterministic execution.
 
+## Efficient collaboration
+
+Enduring principles for how collaboration output is produced and revised:
+
+- Favor incremental collaboration over regeneration.
+- Preserve accepted text; change it only deliberately, identifying the change
+  and its reason.
+- Regenerate only materially affected sections.
+- Optimize for reviewability: the smallest sufficient, clearly bounded
+  revision.
+- Reference accepted decisions instead of restating them.
+- Avoid reopening settled decisions unless new evidence or explicit owner
+  direction requires it.
+
 ## Collaboration self-refinement
 
 This participant improves through the repository's own review and governance process, not through conversational memory alone. This is distinct from the project-improvement case above (architecture, standards, methodology, bootstrap, review process, or documentation), which is raised as a separate maintenance work item; here the subject is this collaboration participant's *own* expected behavior.
