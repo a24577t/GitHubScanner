@@ -76,6 +76,27 @@ def _projected_status(control, entry):
     return value
 
 
+def applicability(control, entry):
+    """(state, reason) on the Applicability plane — the spec's
+    first-match-wins rules for the control's declared kind. An affirmatively
+    enabled control self-evidences applicability (rule 1, both kinds;
+    deliberately asymmetric — disabled establishes nothing); the visibility
+    kind then applies on exact "public", holds plan-gated visibilities as
+    unknown, and degrades everything undetermined. Never coerced, never
+    guessed."""
+    collected = entry.get("state") == "collected"
+    if collected and _projected_status(control, entry) == "enabled":
+        return "applicable", "affirmative-enabled-status"
+    if not collected:
+        return "applicability-unknown", "evidence-unavailable"
+    visibility = entry.get("visibility")
+    if visibility == "public":
+        return "applicable", "public-repository-visibility"
+    if visibility in ("private", "internal"):
+        return "applicability-unknown", "visibility-not-public"
+    return "applicability-unknown", "visibility-undetermined"
+
+
 def operational_state(control, entry):
     """(state, reason) on the Operational State plane — the spec's five
     first-match-wins rules over one derived descriptor entry. Disablement
