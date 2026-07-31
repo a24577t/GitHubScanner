@@ -13,11 +13,10 @@ import unittest
 from pathlib import Path
 
 from fake_github import response, serve
-from test_collect import RUN_ID, collect, repo
-from test_collect_fanout import (
-    org_script, protection_path, rulesets_empty, security_body, security_path,
-    security_ok,
+from fanout_fixtures import (
+    org_script, rulesets_empty, security_body, security_path, security_ok,
 )
+from test_collect import RUN_ID, collect, repo
 
 
 def load(out, repo_dir):

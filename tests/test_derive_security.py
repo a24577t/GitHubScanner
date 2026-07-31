@@ -20,6 +20,7 @@ from test_derive_resources import (
     write_tree,
 )
 from test_derive_rulesets import rs_file
+from test_resources_rulesets import RULESET_ITEM
 
 
 def sa_body(status_pair=("enabled", "disabled"), visibility="public"):
@@ -133,8 +134,6 @@ class ExistingOutputsByteIdentity(unittest.TestCase):
         # with the pre-T1 table and with the shipped table produces
         # byte-identical org, repositories, protection, and rulesets
         # documents; the extension is purely additive.
-        from test_resources_rulesets import RULESET_ITEM
-
         def build(out, table):
             write_tree(out, [page_record([repo_item(1), repo_item(2)])],
                        [protection("1-repo-1", 200, PROTECTION_BODY),

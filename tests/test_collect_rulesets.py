@@ -13,11 +13,11 @@ import unittest
 from pathlib import Path
 
 from fake_github import response, serve
-from test_collect import META_OK, ORG_OK, RUN_ID, USER_OK, collect, repo
-from test_collect_fanout import (
+from fanout_fixtures import (
     PROTECTION_BODY, org_script, protection_path, raw_files, rulesets_path,
     security_ok,
 )
+from test_collect import RUN_ID, collect, repo
 from test_resources_rulesets import RULESET_ITEM
 
 
