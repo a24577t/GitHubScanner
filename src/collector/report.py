@@ -29,6 +29,7 @@ def build_report(api_url, org, run_id, identity_login, summary):
         counts[state] += 1
     return {
         "api_url": api_url,
+        "controls": summary["controls"],
         "execution": summary["execution"],
         "failures": summary["failures"],
         "identity_login": identity_login,
@@ -86,6 +87,7 @@ def render_markdown(report):
     lines += ["", f"Rate-limit waits: {rate['occurrences']} "
                   f"(total {rate['total_seconds']}s)"]
     lines += _aggregate_lines(report["resources"])
+    lines += _control_lines(report["controls"])
     lines += _execution_lines(report["execution"])
     return "\n".join(lines)
 
@@ -105,6 +107,24 @@ def _aggregate_lines(resources):
             f"| {_counts(block['reason_counts'])} "
             f"| {block['waits']['count']} ({block['waits']['total_seconds']}s) |"
         )
+    return lines
+
+
+def _control_lines(control_blocks):
+    """One bounded row per control: the four closed-vocabulary count
+    families, rendered as derived — no rollup, no citation, no per-entry
+    content (V59)."""
+    lines = ["", "## Per-control aggregates", "",
+             "| Control | Applicability | Applicability reasons "
+             "| Operational states | Operational reasons |",
+             "| --- | --- | --- | --- | --- |"]
+    for name in sorted(control_blocks):
+        block = control_blocks[name]
+        lines.append(
+            f"| {name} | {_counts(block['applicability_counts'])} "
+            f"| {_counts(block['applicability_reason_counts'])} "
+            f"| {_counts(block['operational_state_counts'])} "
+            f"| {_counts(block['operational_state_reason_counts'])} |")
     return lines
 
 
