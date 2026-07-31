@@ -56,6 +56,19 @@ authority over GHScannerLab (accepted Slice 3 specification and matrix).
   during repository-owner incident response rather than through provider
   verification.
 
+## Verification principle (operational; owner-recorded 2026-07-31)
+
+Operational configuration changes are considered effective only after
+independent verification of the resulting repository state. API success
+responses are treated as requests, not evidence that the requested state
+was achieved. (The non-provider-patterns attempt above is the canonical
+example: a success response with no state change.)
+
+Scope: this principle governs operational documentation and operational
+procedures only. It is **not** elevated into Slice 3 architecture or
+validation methodology unless a future slice establishes it as a broader
+repository invariant.
+
 ## Boundaries
 
 - GHScannerLab fixtures are untouched by this record and by the changes
