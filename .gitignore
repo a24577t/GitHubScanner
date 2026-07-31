@@ -12,3 +12,8 @@ __pycache__/
 htmlcov/
 build/
 dist/
+
+# Local teach-skill workspace (operator training for the validation environment;
+# outside repository governance — see docs/validation/validation-environment.md).
+# The teach skill's workspace root is this directory, never the repository root.
+teaching-workspace/
