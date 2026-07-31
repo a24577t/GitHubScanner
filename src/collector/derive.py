@@ -151,7 +151,13 @@ def _control_documents(table, documents):
     """
     resolved = {}
     for control in table:
-        source = documents[control["descriptor"]]
+        source = documents.get(control["descriptor"])
+        if source is None:
+            # Unreachable outside reduced descriptor tables (import-time
+            # validation pins every control's descriptor to the shipped
+            # table): a control whose evidence surface was not derived in
+            # this run cannot be observed, so no document is emitted.
+            continue
         entries = []
         for entry in source["repositories"]:
             conclusions = resolved.setdefault(entry["id"], {})
