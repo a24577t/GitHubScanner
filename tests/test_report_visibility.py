@@ -6,8 +6,10 @@ state/reason vocabularies — never by the estate (failures excepted).
 """
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
+from collector import resources
 from collector.derive import run_summary
 from collector.report import build_report, render_markdown
 from collector.serialize import canonical_dumps
@@ -95,6 +97,44 @@ class RulesetsAggregates(unittest.TestCase):
         self.assertEqual(block["state_counts"], {"collected": 1})
         markdown = render_markdown(report)
         self.assertIn("| repository-rulesets | collected |", markdown)
+
+
+class SecurityAnalysisAdditivity(unittest.TestCase):
+    def test_pre_t1_report_rows_byte_identical_new_row_additive(self):
+        # The T1 preservation AC's report half (T8 precedent): the same tree
+        # reported under the pre-T1 table and the shipped table keeps every
+        # pre-existing per-resource aggregate byte-identical; the extension
+        # is one additive row. The planned-request execution counts follow
+        # the descriptor table by design - the disclosed T8-precedent
+        # consequence pinned in test_summary_execution.py.
+        def report_with(table):
+            with tempfile.TemporaryDirectory() as tmp:
+                out = Path(tmp) / "out"
+                write_tree(out, [page_record([repo_item(1)])],
+                           [protection("1-repo-1", 200, PROTECTION_BODY,
+                                       repo={"id": 1,
+                                             "full_name": "acme/repo-1"},
+                                       resource="default-branch-protection"),
+                            rs_file(1, 1, [])])
+                with mock.patch.object(resources, "DESCRIPTORS", table):
+                    return build_report("https://api.example", "acme", RUN,
+                                        "op", run_summary(out, RUN))
+
+        before = report_with((resources.DEFAULT_BRANCH_PROTECTION,
+                              resources.REPOSITORY_RULESETS))
+        after = report_with(resources.DESCRIPTORS)
+        for name in ("default-branch-protection", "repository-rulesets"):
+            self.assertEqual(canonical_dumps(before["resources"][name]),
+                             canonical_dumps(after["resources"][name]), name)
+        self.assertEqual(sorted(after["resources"]),
+                         ["default-branch-protection", "repository-rulesets",
+                          "security-and-analysis"])
+        self.assertNotIn("security-and-analysis", before["resources"])
+        after_markdown = render_markdown(after)
+        for line in render_markdown(before).splitlines():
+            if line.startswith(("| default-branch-protection",
+                                "| repository-rulesets")):
+                self.assertIn(line, after_markdown)
 
 
 class MarkdownWaitVisibility(unittest.TestCase):

@@ -13,10 +13,11 @@ import unittest
 from pathlib import Path
 
 from fake_github import response, serve
-from test_collect import META_OK, ORG_OK, RUN_ID, USER_OK, collect, repo
-from test_collect_fanout import (
+from fanout_fixtures import (
     PROTECTION_BODY, org_script, protection_path, raw_files, rulesets_path,
+    security_ok,
 )
+from test_collect import RUN_ID, collect, repo
 from test_resources_rulesets import RULESET_ITEM
 
 
@@ -138,6 +139,7 @@ class DescriptorCoexistence(unittest.TestCase):
             **{protection_path(2): [response(200, PROTECTION_BODY)],
                rulesets_path(1): [response(200, [RULESET_ITEM])],
                rulesets_path(2): [response(200, [])]},
+            **security_ok(1, 2),
         )
         with serve(script) as (base, recorder), \
                 tempfile.TemporaryDirectory() as tmp:
@@ -147,8 +149,10 @@ class DescriptorCoexistence(unittest.TestCase):
             self.assertEqual(
                 [f for f in raw_files(out) if f.startswith("repos/")],
                 ["repos/1-repo-1/repository-rulesets.page-1.json",
+                 "repos/1-repo-1/security-and-analysis.json",
                  "repos/2-repo-2/default-branch-protection.json",
-                 "repos/2-repo-2/repository-rulesets.page-1.json"])
+                 "repos/2-repo-2/repository-rulesets.page-1.json",
+                 "repos/2-repo-2/security-and-analysis.json"])
             self.assertEqual(
                 [r["path"] for r in recorder.requests
                  if "/branches/" in r["path"]],

@@ -146,8 +146,10 @@ RULESET_ITEM = {
 
 class ShippedDescriptorContract(unittest.TestCase):
     def test_repository_rulesets_is_second_in_table_order(self):
+        # Expectation extended for the three-descriptor table (Slice 3 T1).
         self.assertEqual([d["name"] for d in resources.DESCRIPTORS],
-                         ["default-branch-protection", "repository-rulesets"])
+                         ["default-branch-protection", "repository-rulesets",
+                          "security-and-analysis"])
 
     def test_repository_rulesets_request_contract(self):
         descriptor = resources.REPOSITORY_RULESETS
