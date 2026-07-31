@@ -89,6 +89,12 @@ def run_summary(out_dir, run_id):
     resource_states["repositories"] = projections.listing_state(page_states)
     complete = bool(page_states) and all(s == "collected" for s in page_states)
     structural = projections.structural_report(raw_dir)
+    conflicted = projections.conflicted_ids(structural)
+    documents = {
+        descriptor["name"]: projections.resource_document(
+            run_id, raw_dir, descriptor, page_records,
+            resource_states["repositories"], conflicted)
+        for descriptor in resources.DESCRIPTORS}
     return {
         "resource_states": resource_states,
         "failures": failures,
@@ -97,16 +103,15 @@ def run_summary(out_dir, run_id):
         "waits": waits,
         # Additive keys for T7's report growth; Slice 1 report assembly reads
         # only the four keys above, so its output is untouched this ticket.
-        "resources": _fanout_summary(run_id, raw_dir, page_records,
-                                     resource_states["repositories"],
-                                     projections.conflicted_ids(structural)),
+        "resources": _fanout_summary(raw_dir, documents),
+        "controls": summary.control_aggregates(
+            dict(_control_documents(controls.CONTROLS, documents))),
         "structural": {key: list(value) for key, value in structural.items()},
         "execution": summary.execution_summary(raw_dir, page_records),
     }
 
 
-def _fanout_summary(run_id, raw_dir, page_records, inventory_state,
-                    conflicted):
+def _fanout_summary(raw_dir, documents):
     """Estate-independent per-descriptor aggregates (failures excepted by
     design live in reason_counts until T7 decides its rendering)."""
     waits_by_resource = {}
@@ -119,21 +124,18 @@ def _fanout_summary(run_id, raw_dir, page_records, inventory_state,
                 waits_by_resource.setdefault(name, []).extend(
                     envelope.get("waits_seconds", []))
     aggregates = {}
-    for descriptor in resources.DESCRIPTORS:
-        document = projections.resource_document(
-            run_id, raw_dir, descriptor, page_records, inventory_state,
-            conflicted)
+    for name, document in documents.items():
         state_counts, reason_counts = {}, {}
         for entry in document["repositories"]:
             state_counts[entry["state"]] = (
                 state_counts.get(entry["state"], 0) + 1)
             reason_counts[entry["reason"]] = (
                 reason_counts.get(entry["reason"], 0) + 1)
-        aggregates[descriptor["name"]] = {
+        aggregates[name] = {
             "state": document["state"],
             "state_counts": state_counts,
             "reason_counts": reason_counts,
-            "waits_seconds": waits_by_resource.get(descriptor["name"], []),
+            "waits_seconds": waits_by_resource.get(name, []),
         }
     return aggregates
 

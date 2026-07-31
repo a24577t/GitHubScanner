@@ -9,7 +9,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from collector import resources
+from collector import controls, resources
 from collector.derive import run_summary
 from collector.report import build_report, render_markdown
 from collector.serialize import canonical_dumps
@@ -116,7 +116,14 @@ class SecurityAnalysisAdditivity(unittest.TestCase):
                                              "full_name": "acme/repo-1"},
                                        resource="default-branch-protection"),
                             rs_file(1, 1, [])])
-                with mock.patch.object(resources, "DESCRIPTORS", table):
+                # The reduced-table world keeps only controls whose evidence
+                # descriptor it derives (T3's loud pairing invariant; the
+                # test_derive_security pattern).
+                names = {descriptor["name"] for descriptor in table}
+                with mock.patch.object(resources, "DESCRIPTORS", table), \
+                        mock.patch.object(controls, "CONTROLS", tuple(
+                            c for c in controls.CONTROLS
+                            if c["descriptor"] in names)):
                     return build_report("https://api.example", "acme", RUN,
                                         "op", run_summary(out, RUN))
 
