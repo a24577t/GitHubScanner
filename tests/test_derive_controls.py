@@ -10,9 +10,12 @@ orchestrates, controls.py concludes.
 import json
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
+from collector import controls
 from collector.derive import derive_observed
+from test_controls_chain import CHAINED
 from test_derive_resources import RUN, page_record, repo_item, write_tree
 from test_derive_security import sa_body, sa_file
 
@@ -173,6 +176,64 @@ class RollupAndDegradation(unittest.TestCase):
             self.assertEqual(doc["state"], "unknown")
             self.assertEqual(doc["repositories"], [])
             self.assertEqual(doc["coverage"]["eligible_target_count"], 0)
+
+
+class TableOrderOrchestration(unittest.TestCase):
+    """The orchestration is generic over the control table: controls evaluate
+    in table order with a fresh per-target resolved mapping, a chained
+    control receives its predecessor's conclusion, and a future chained
+    definition therefore needs no derive change (T5's architectural AC).
+    Synthetic table only — the shipped CONTROLS stays secret-scanning."""
+
+    def chained_documents(self, out):
+        with mock.patch.object(controls, "CONTROLS",
+                               (controls.SECRET_SCANNING, CHAINED)):
+            derive_observed(out, run_id=RUN)
+        controls_dir = out / "observed" / "controls"
+        return ([path.name for path in sorted(controls_dir.iterdir())],
+                json.loads((controls_dir / "chained-probe.json")
+                           .read_text(encoding="utf-8")))
+
+    def test_dependent_receives_its_predecessors_conclusion_per_target(self):
+        # Target 1: SS applicable (enabled, public) -> the chained probe
+        # concludes available. Target 2: SS applicability-unknown (disabled,
+        # private) -> the chain stays unestablished. The per-target resolved
+        # mapping is fresh - target 1's conclusion never leaks to target 2.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1), repo_item(2)])],
+                       [sa_file(1, 200, sa_body()),
+                        sa_file(2, 200,
+                                sa_body(status_pair=("disabled", "disabled"),
+                                        visibility="private"))])
+            names, doc = self.chained_documents(out)
+            self.assertEqual(names,
+                             ["chained-probe.json", "secret-scanning.json"])
+            chain_conclusions = [
+                (entry["applicability"], entry["applicability_reason"],
+                 entry["operational_state"])
+                for entry in doc["repositories"]]
+            self.assertEqual(chain_conclusions, [
+                ("applicable", "secret-scanning-available", "disabled"),
+                ("applicability-unknown",
+                 "secret-scanning-availability-unknown", "disabled"),
+            ])
+
+    def test_own_enabled_status_precedes_the_chain_in_the_document(self):
+        # V56's direction at the document seam: the probe's own affirmative
+        # status self-evidences even where the predecessor is unknown.
+        body = sa_body(status_pair=("disabled", "enabled"),
+                       visibility="private")
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)])],
+                       [sa_file(1, 200, body)])
+            _, doc = self.chained_documents(out)
+            [entry] = doc["repositories"]
+            self.assertEqual((entry["applicability"],
+                              entry["applicability_reason"]),
+                             ("applicable", "affirmative-enabled-status"))
+            self.assertEqual(entry["operational_state"], "enabled")
 
 
 if __name__ == "__main__":
