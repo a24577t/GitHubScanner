@@ -218,14 +218,18 @@ class PlannedVersusAttempts(unittest.TestCase):
                        [("1-repo-1", "default-branch-protection.json",
                          failing)])
             requests = execution(out)["requests"]
-            self.assertEqual(requests["planned_singles"], 5)
+            # Planned singles: three Slice-1 singles plus, per target, one
+            # protection and one input-free security-and-analysis request
+            # (three-descriptor table, Slice 3 T1); both security-and-analysis
+            # artifacts are also absent in this tree.
+            self.assertEqual(requests["planned_singles"], 7)
             self.assertEqual(requests["planned_drains"], 3)
             self.assertEqual(requests["missing_input"], 0)
             self.assertEqual(requests["retained_records"], 5)
             self.assertEqual(requests["attempts"], 7)
             self.assertEqual(requests["completed"], 4)
             self.assertEqual(requests["failed"], 1)
-            self.assertEqual(requests["evidence_absent"], 3)
+            self.assertEqual(requests["evidence_absent"], 5)
 
     def test_missing_input_receives_no_planned_request(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -233,12 +237,14 @@ class PlannedVersusAttempts(unittest.TestCase):
             write_tree(out, [page_record([repo_item(1,
                                                     default_branch=None)])])
             requests = execution(out)["requests"]
-            self.assertEqual(requests["planned_singles"], 3)
+            # Only the protection request goes missing-input; the input-free
+            # security-and-analysis single stays planned (Slice 3 T1).
+            self.assertEqual(requests["planned_singles"], 4)
             self.assertEqual(requests["missing_input"], 1)
             # The input-free rulesets drain stays planned for the same
             # target (descriptor coexistence, T8) and is absent here.
             self.assertEqual(requests["planned_drains"], 2)
-            self.assertEqual(requests["evidence_absent"], 1)
+            self.assertEqual(requests["evidence_absent"], 2)
 
     def test_rate_limit_marked_final_record_counts_failed(self):
         with tempfile.TemporaryDirectory() as tmp:
