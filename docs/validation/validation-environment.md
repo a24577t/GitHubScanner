@@ -62,6 +62,10 @@ expiry 2026-08-28).
 - **Recorded divergence (first run, 20260725T184527Z):** the run used the operator's existing `gh` CLI token (scopes broader than the standing rule) by explicit owner decision, to avoid blocking the first evidence capture. The standing rule applies from the next validation run onward.
 - **Standing-credential record (run `20260730T162522Z`, per V09):** documented (specification): fine-grained, read-only, scoped to `GHScannerLab`; repository Administration: read (protection), Metadata: read (rulesets). Configured (owner-provisioned 2026-07-30): fine-grained PAT, resource owner `GHScannerLab`, all-repositories access, Administration: read-only and Metadata: read-only, dated expiry, supplied via `GITHUB_TOKEN` from the operator environment and never written to the repository. Observed (run evidence): all five fixture repositories reached; protection object read (200); absence and not-found 404s carry genuine protection semantics, not permission masking; rulesets listings read (200). Divergences: none — the standing rule is satisfied; no classic-PAT substitution occurred. The restricted PAT (V10) was not provisioned this cycle (see run record).
 
+## Operator training workspace (local)
+
+Operator training for this environment (credential and fixture provisioning under the discipline above) is developed with the `teach` skill in a **local, git-ignored workspace at `teaching-workspace/`** — the skill's workspace root is that directory, never the repository root. The workspace is deliberately outside repository governance: it is never committed, carries no authority, and its paths are structurally excluded from token-secrecy scans (as recorded for run `20260730T162522Z`).
+
 ## What this environment validates — and what it does not
 
 It validates the scanner against **live github.com on a Free-plan organization**: real REST API behavior, authentication, organization endpoints, effective permissions, pagination and response formats — the assumptions otherwise encoded only in the scripted test fixture (`tests/fake_github.py`).
