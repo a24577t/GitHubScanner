@@ -115,8 +115,10 @@ class RollupAndDegradation(unittest.TestCase):
 
     def test_v58_rollup_is_the_listing_rule_over_cited_evidence_states(self):
         # Mixed tree: collected + 403 + absent artifact. The rollup takes the
-        # first non-collected cited state; every level of the document agrees
-        # with the citations it carries (never copied from anywhere else).
+        # first non-collected cited state. It coincides with the descriptor
+        # document's state by construction (citations carry the same states),
+        # so this pins the value; the computed-from-citations path is code
+        # inspection, per the spec's wording (S10 record).
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "out"
             write_tree(out,
