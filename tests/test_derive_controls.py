@@ -105,5 +105,75 @@ class DocumentShape(unittest.TestCase):
                 (controls_dir / "secret-scanning.json").read_bytes(), first)
 
 
+class RollupAndDegradation(unittest.TestCase):
+    """V58: the top-level state is the Slice 1 listing rule over the cited
+    evidence states — the evidence-plane rollup only. V53: unusable evidence
+    degrades both planes with the recorded-failure citation preserved."""
+
+    def test_v58_rollup_is_the_listing_rule_over_cited_evidence_states(self):
+        # Mixed tree: collected + 403 + absent artifact. The rollup takes the
+        # first non-collected cited state; every level of the document agrees
+        # with the citations it carries (never copied from anywhere else).
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out,
+                       [page_record([repo_item(1), repo_item(2), repo_item(3)])],
+                       [sa_file(1, 200, sa_body()),
+                        sa_file(2, 403, {"message": "Forbidden"})])
+            doc = control_document(out)
+            cited = [entry["evidence"]["state"]
+                     for entry in doc["repositories"]]
+            self.assertEqual(cited, ["collected", "inaccessible", "unknown"])
+            self.assertEqual(doc["state"], "inaccessible")
+
+    def test_v53_absent_artifact_degrades_both_planes_with_citation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1)])])
+            doc = control_document(out)
+            self.assertEqual(doc["state"], "unknown")
+            [entry] = doc["repositories"]
+            self.assertEqual(entry["operational_state"], "unknown")
+            self.assertEqual(entry["operational_state_reason"],
+                             "evidence-unavailable")
+            self.assertEqual(entry["applicability"], "applicability-unknown")
+            self.assertEqual(entry["applicability_reason"],
+                             "evidence-unavailable")
+            self.assertEqual(entry["evidence"],
+                             {"resource": "security-and-analysis",
+                              "state": "unknown",
+                              "reason": "raw-evidence-absent"})
+
+    def test_v52_v54_inaccessible_citations_carry_their_exact_reasons(self):
+        # The citation preserves the taxonomy's deterministic reason — the
+        # 401/403 and anchor-less-404 classes stay distinguishable in the
+        # document even though both planes degrade identically.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([repo_item(1), repo_item(2)])],
+                       [sa_file(1, 403, {"message": "Forbidden"}),
+                        sa_file(2, 404, {"message": "Not Found"})])
+            doc = control_document(out)
+            reasons = [(entry["evidence"]["reason"],
+                        entry["operational_state"],
+                        entry["applicability"])
+                       for entry in doc["repositories"]]
+            self.assertEqual(reasons, [
+                ("authorization-denied", "inaccessible",
+                 "applicability-unknown"),
+                ("absence-rule-unmatched-404", "inaccessible",
+                 "applicability-unknown"),
+            ])
+
+    def test_empty_estate_rolls_up_unknown_with_zero_coverage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            write_tree(out, [page_record([])])
+            doc = control_document(out)
+            self.assertEqual(doc["state"], "unknown")
+            self.assertEqual(doc["repositories"], [])
+            self.assertEqual(doc["coverage"]["eligible_target_count"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
