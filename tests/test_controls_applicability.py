@@ -10,7 +10,9 @@ Exactly one state and one reason per entry.
 """
 import unittest
 
-from collector.controls import SECRET_SCANNING, applicability
+from collector.controls import (
+    APPLICABILITY_STATES, SECRET_SCANNING, applicability,
+)
 from test_controls_operational import entry
 
 
@@ -102,6 +104,20 @@ class UnusableEvidence(unittest.TestCase):
             applicability(SECRET_SCANNING,
                           entry(state="failed", reason="shape-invalid")),
             ("applicability-unknown", "evidence-unavailable"))
+
+
+class VocabularyMembership(unittest.TestCase):
+    def test_every_returned_state_is_in_the_closed_vocabulary(self):
+        # Pins the exported vocabulary to the rules' actual outputs so the
+        # two cannot drift apart (S10 run-1 strengthening).
+        probes = [entry(), entry(scanning="disabled"),
+                  entry(scanning="disabled", visibility="private"),
+                  entry(scanning="disabled", visibility="unknown"),
+                  entry(state="inaccessible", reason="authorization-denied"),
+                  entry(state="unknown", reason="raw-evidence-absent")]
+        for probe in probes:
+            state, _ = applicability(SECRET_SCANNING, probe)
+            self.assertIn(state, APPLICABILITY_STATES)
 
 
 if __name__ == "__main__":

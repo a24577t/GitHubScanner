@@ -10,7 +10,9 @@ entry; ambiguity degrades, never concludes (ADR-0008).
 """
 import unittest
 
-from collector.controls import SECRET_SCANNING, operational_state
+from collector.controls import (
+    OPERATIONAL_STATES, SECRET_SCANNING, operational_state,
+)
 
 
 def entry(state="collected", reason="collected", scanning="enabled",
@@ -38,10 +40,14 @@ class AffirmativeStatuses(unittest.TestCase):
             ("disabled", "affirmative-status-disabled"))
 
     def test_own_field_only_never_the_sibling_control(self):
-        # The definition's status_path selects secret_scanning; the sibling
-        # push-protection status (disabled in the fixture) must not leak.
-        self.assertEqual(operational_state(SECRET_SCANNING, entry()),
-                         ("enabled", "affirmative-status-enabled"))
+        # SS disabled while the sibling push-protection status is enabled:
+        # the definition's status_path must select secret_scanning — a
+        # sibling leak would derive enabled.
+        probe = entry(scanning="disabled")
+        probe["security_and_analysis"]["secret_scanning_push_protection"] = {
+            "status": "enabled"}
+        self.assertEqual(operational_state(SECRET_SCANNING, probe),
+                         ("disabled", "affirmative-status-disabled"))
 
 
 class UndeterminedStatuses(unittest.TestCase):
@@ -127,6 +133,20 @@ class UnavailableEvidence(unittest.TestCase):
                 self.assertEqual(
                     operational_state(SECRET_SCANNING, entry(state=state)),
                     ("unknown", "evidence-unavailable"))
+
+
+class VocabularyMembership(unittest.TestCase):
+    def test_every_returned_state_is_in_the_closed_vocabulary(self):
+        # Pins the exported vocabulary to the rules' actual outputs so the
+        # two cannot drift apart (S10 run-1 strengthening).
+        probes = [entry(), entry(scanning="disabled"),
+                  entry(scanning="paused"), entry(scanning="unknown"),
+                  entry(state="inaccessible", reason="authorization-denied"),
+                  entry(state="failed", reason="transport-failed"),
+                  entry(state="unknown", reason="raw-evidence-absent")]
+        for probe in probes:
+            state, _ = operational_state(SECRET_SCANNING, probe)
+            self.assertIn(state, OPERATIONAL_STATES)
 
 
 if __name__ == "__main__":
