@@ -9,6 +9,7 @@ retention fields read as empty — never repaired.
 import math
 
 from collector import resources, targets
+from collector.controls import APPLICABILITY_STATES, OPERATIONAL_STATES
 from collector.projections import scan_envelope
 from collector.transport import rate_limited
 
@@ -31,6 +32,40 @@ def _number(value):
     if isinstance(value, float) and math.isfinite(value):
         return value
     return 0
+
+
+def control_aggregates(documents):
+    """Per-control closed-vocabulary distribution counts (V59) over
+    control-observation documents: the specification's four count families,
+    observed keys only — never zero-filled, size bounded by the closed plane
+    vocabularies and never the estate. States count only inside their plane's
+    closed set; no evidence-plane rollup, citation, or estate-level plane
+    state ever enters the aggregates (ADR-0009)."""
+    aggregates = {}
+    for name, document in documents.items():
+        block = {"applicability_counts": {},
+                 "applicability_reason_counts": {},
+                 "operational_state_counts": {},
+                 "operational_state_reason_counts": {}}
+        for entry in document["repositories"]:
+            _plane(block, "applicability", entry["applicability"],
+                   entry["applicability_reason"], APPLICABILITY_STATES)
+            _plane(block, "operational_state", entry["operational_state"],
+                   entry["operational_state_reason"], OPERATIONAL_STATES)
+        aggregates[name] = block
+    return aggregates
+
+
+def _plane(block, plane, state, reason, allowed):
+    """One plane conclusion into its two count families. The (state, reason)
+    pair is emitted atomically by the control layer, so it gates as a unit:
+    a state outside the closed vocabulary suppresses the pair."""
+    if state not in allowed:
+        return
+    bucket = block[plane + "_counts"]
+    bucket[state] = bucket.get(state, 0) + 1
+    bucket = block[plane + "_reason_counts"]
+    bucket[reason] = bucket.get(reason, 0) + 1
 
 
 def _tree_envelopes(raw_dir):
