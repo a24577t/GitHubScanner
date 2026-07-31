@@ -62,7 +62,39 @@ REPOSITORY_RULESETS = {
                    ("rulesets", ("items", "id", RULESET_SUMMARY))),
 }
 
-DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION, REPOSITORY_RULESETS)
+SECURITY_ANALYSIS_PROJECTION = (
+    ("visibility", ("field", "visibility")),
+    ("security_and_analysis", ("object", "security_and_analysis", (
+        ("secret_scanning", ("object", "secret_scanning", (
+            ("status", ("field", "status")),
+        ))),
+        ("secret_scanning_push_protection",
+         ("object", "secret_scanning_push_protection", (
+             ("status", ("field", "status")),
+         ))),
+    ))),
+)
+
+SECURITY_AND_ANALYSIS = {
+    "name": "security-and-analysis",
+    # Observes only the repository metadata object's visibility and
+    # security_and_analysis surface via ADR-0009's dedicated request (issue
+    # #27 decision) - no claim about other metadata, organization security
+    # configuration, or scanning activity. Both controls' status fields ship
+    # together so the T5 push-protection control adds no descriptor change.
+    # No absence anchor: a discovered repository's metadata object has no
+    # affirmative-absence class; a 404 derives inaccessible ·
+    # absence-rule-unmatched-404 (ADR-0006). Absence of the surface in a
+    # collected body is undetermined data, never disablement (ADR-0008).
+    "path_template": "/repos/{full_name}",
+    "shape": "object",
+    "required_inputs": (),
+    "absence_message": None,
+    "projection": SECURITY_ANALYSIS_PROJECTION,
+}
+
+DESCRIPTORS = (DEFAULT_BRANCH_PROTECTION, REPOSITORY_RULESETS,
+               SECURITY_AND_ANALYSIS)
 
 
 def _validate_projection(name, entries, seen):
