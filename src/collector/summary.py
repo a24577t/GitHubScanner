@@ -37,10 +37,15 @@ def _number(value):
 def control_aggregates(documents):
     """Per-control closed-vocabulary distribution counts (V59) over
     control-observation documents: the specification's four count families,
-    observed keys only — never zero-filled, size bounded by the closed plane
-    vocabularies and never the estate. States count only inside their plane's
-    closed set; no evidence-plane rollup, citation, or estate-level plane
-    state ever enters the aggregates (ADR-0009)."""
+    observed keys only — never zero-filled. State figures gate on the closed
+    plane vocabularies; reason vocabularies are the emitting control layer's
+    guarantee (exactly one deterministic reason per conclusion), so on
+    scanner-written documents every family is vocabulary-bounded and report
+    size never tracks the estate. Junk-typed values contribute nothing (the
+    T7 type-deep rule); string junk is indistinguishable here and is not
+    semantically re-vetted — vocabulary reification stays with the deferred
+    closed-vocabulary-ownership work. No evidence-plane rollup, citation, or
+    estate-level plane state ever enters the aggregates (ADR-0009)."""
     aggregates = {}
     for name, document in documents.items():
         if not isinstance(name, str):
