@@ -6,7 +6,9 @@ applicability counts, applicability-reason counts, operational-state
 counts, operational-state-reason counts - closed vocabularies only,
 observed keys only, never zero-filled. Evidence-plane state and citations
 never enter the aggregates (rollup of either plane is rejected by
-ADR-0009); size is bounded by the closed vocabularies, never the estate.
+ADR-0009); state figures gate on the closed plane vocabularies, reason
+vocabularies are the emitting control layer's guarantee, and on
+scanner-written documents size never tracks the estate.
 """
 import unittest
 
