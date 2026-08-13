@@ -150,14 +150,15 @@ class SummaryGeneralization(unittest.TestCase):
             self.assertEqual(summary["structural"]["unrecognized_directories"],
                              ["stray-notes"])
             self.assertEqual(summary["structural"]["conflicted_directories"], [])
-            # T7 report growth is exactly the two authorized keys: execution
-            # (wait visibility) and resources (per-descriptor aggregates).
+            # Authorized report growth only: T7 added execution (wait
+            # visibility) and resources (per-descriptor aggregates); T4 adds
+            # controls (per-control distribution aggregates, V59).
             report = build_report("https://api.example", "acme", RUN, "op",
                                   summary)
             self.assertEqual(sorted(report), [
-                "api_url", "execution", "failures", "identity_login",
-                "listings", "org", "rate_limit", "resource_states",
-                "resources", "run_id", "state_counts",
+                "api_url", "controls", "execution", "failures",
+                "identity_login", "listings", "org", "rate_limit",
+                "resource_states", "resources", "run_id", "state_counts",
             ])
             self.assertEqual(sorted(summary["resource_states"]),
                              ["meta", "org", "repositories", "user"])

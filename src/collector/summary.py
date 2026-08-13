@@ -9,6 +9,7 @@ retention fields read as empty — never repaired.
 import math
 
 from collector import resources, targets
+from collector.controls import APPLICABILITY_STATES, OPERATIONAL_STATES
 from collector.projections import scan_envelope
 from collector.transport import rate_limited
 
@@ -31,6 +32,55 @@ def _number(value):
     if isinstance(value, float) and math.isfinite(value):
         return value
     return 0
+
+
+def control_aggregates(documents):
+    """Per-control closed-vocabulary distribution counts (V59) over
+    control-observation documents: the specification's four count families,
+    observed keys only — never zero-filled. State figures gate on the closed
+    plane vocabularies; reason vocabularies are the emitting control layer's
+    guarantee (exactly one deterministic reason per conclusion), so on
+    scanner-written documents every family is vocabulary-bounded and report
+    size never tracks the estate. Junk-typed values contribute nothing (the
+    T7 type-deep rule); string junk is indistinguishable here and is not
+    semantically re-vetted — vocabulary reification stays with the deferred
+    closed-vocabulary-ownership work. No evidence-plane rollup, citation, or
+    estate-level plane state ever enters the aggregates (ADR-0009)."""
+    aggregates = {}
+    for name, document in documents.items():
+        if not isinstance(name, str):
+            continue
+        block = {"applicability_counts": {},
+                 "applicability_reason_counts": {},
+                 "operational_state_counts": {},
+                 "operational_state_reason_counts": {}}
+        entries = (document.get("repositories")
+                   if isinstance(document, dict) else None)
+        for entry in (entries if isinstance(entries, list) else ()):
+            if not isinstance(entry, dict):
+                continue
+            _plane(block, "applicability", entry.get("applicability"),
+                   entry.get("applicability_reason"), APPLICABILITY_STATES)
+            _plane(block, "operational_state", entry.get("operational_state"),
+                   entry.get("operational_state_reason"), OPERATIONAL_STATES)
+        aggregates[name] = block
+    return aggregates
+
+
+def _plane(block, plane, state, reason, allowed):
+    """One plane conclusion into its two count families. The (state, reason)
+    pair is emitted atomically by the control layer, so it gates as a unit:
+    a state outside the closed vocabulary suppresses the pair. A valid state
+    paired with a non-string reason still counts as a state figure — the
+    junk reason alone contributes nothing (T6/T7 scan-tolerance rule)."""
+    if not isinstance(state, str) or state not in allowed:
+        return
+    bucket = block[plane + "_counts"]
+    bucket[state] = bucket.get(state, 0) + 1
+    if not isinstance(reason, str):
+        return
+    bucket = block[plane + "_reason_counts"]
+    bucket[reason] = bucket.get(reason, 0) + 1
 
 
 def _tree_envelopes(raw_dir):
