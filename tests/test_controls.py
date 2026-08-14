@@ -2,9 +2,10 @@
 
 ADR-0009's control-definition layer: controls are reviewed in-code
 declarative data validated at import time exactly as the descriptor table
-is. The shipped table carries the slice's first control only —
-secret-scanning; push protection is T5's definition-only diff. Malformed
-definitions are rejected loudly (ticket #68 AC).
+is. The shipped table carries both slice controls — secret-scanning and its
+chained dependent secret-scanning-push-protection (T5's definition-only
+diff, ticket #71). Malformed definitions are rejected loudly (ticket #68
+AC).
 """
 import unittest
 
@@ -24,20 +25,36 @@ def control(**overrides):
 
 
 class ShippedTable(unittest.TestCase):
-    def test_table_ships_exactly_the_secret_scanning_control(self):
-        # T2 ships the first control only (spec Tasks: T2); the
-        # push-protection definition is T5's diff.
+    def test_table_ships_both_slice_controls_in_chain_order(self):
+        # T5 adds the push-protection definition (spec Tasks: T5; ticket
+        # #71). Table order is load-bearing: a chain target must precede its
+        # dependent (single deterministic evaluation pass).
         self.assertEqual(
-            [entry["name"] for entry in controls.CONTROLS], ["secret-scanning"])
+            [entry["name"] for entry in controls.CONTROLS],
+            ["secret-scanning", "secret-scanning-push-protection"])
 
     def test_secret_scanning_definition_is_pinned_field_by_field(self):
-        [definition] = controls.CONTROLS
+        [definition, _] = controls.CONTROLS
         self.assertEqual(definition, {
             "name": "secret-scanning",
             "descriptor": "security-and-analysis",
             "status_path": (
                 "security_and_analysis", "secret_scanning", "status"),
             "applicability": "visibility",
+        })
+
+    def test_push_protection_definition_is_pinned_field_by_field(self):
+        # Spec Control definitions: own status field on the shared
+        # security-and-analysis surface (no descriptor change, no new
+        # request); applicability chains on secret-scanning availability.
+        [_, definition] = controls.CONTROLS
+        self.assertEqual(definition, {
+            "name": "secret-scanning-push-protection",
+            "descriptor": "security-and-analysis",
+            "status_path": (
+                "security_and_analysis", "secret_scanning_push_protection",
+                "status"),
+            "applicability": ("chain", "secret-scanning"),
         })
 
     def test_shipped_table_passes_its_own_validation(self):

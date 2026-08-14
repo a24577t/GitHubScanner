@@ -70,7 +70,9 @@ class SummaryOrchestration(unittest.TestCase):
             out = Path(tmp) / "out"
             mixed_estate(out)
             summary = run_summary(out, RUN)
-        self.assertEqual(sorted(summary["controls"]), ["secret-scanning"])
+        self.assertEqual(sorted(summary["controls"]),
+                         ["secret-scanning",
+                          "secret-scanning-push-protection"])
         self.assertEqual(summary["controls"]["secret-scanning"], MIXED_BLOCK)
 
     def test_legacy_tree_aggregates_evidence_unavailable_only(self):
@@ -96,12 +98,14 @@ class SummaryOrchestration(unittest.TestCase):
             out = Path(tmp) / "out"
             mixed_estate(out)
             derive_observed(out, run_id=RUN)
-            emitted = json.loads(
-                (out / "observed" / "controls" / "secret-scanning.json")
-                .read_text(encoding="utf-8"))
+            emitted = {
+                name: json.loads(
+                    (out / "observed" / "controls" / (name + ".json"))
+                    .read_text(encoding="utf-8"))
+                for name in ("secret-scanning",
+                             "secret-scanning-push-protection")}
             summary = run_summary(out, RUN)
-        self.assertEqual(summary["controls"],
-                         control_aggregates({"secret-scanning": emitted}))
+        self.assertEqual(summary["controls"], control_aggregates(emitted))
 
     def test_controls_block_follows_the_control_table(self):
         # Table-driven, never name-driven: an empty control table yields an
@@ -200,7 +204,14 @@ class ExistingSectionPreservation(unittest.TestCase):
              "| disabled: 2, enabled: 1, inaccessible: 1, unknown: 2 "
              "| affirmative-status-disabled: 2, affirmative-status-enabled: 1, "
              "evidence-inaccessible: 1, evidence-unavailable: 1, "
-             "status-undetermined: 1 |"])
+             "status-undetermined: 1 |",
+             "| secret-scanning-push-protection "
+             "| applicability-unknown: 3, applicable: 3 "
+             "| secret-scanning-availability-unknown: 3, "
+             "secret-scanning-available: 3 "
+             "| disabled: 4, inaccessible: 1, unknown: 1 "
+             "| affirmative-status-disabled: 4, evidence-inaccessible: 1, "
+             "evidence-unavailable: 1 |"])
 
 
 class SyntheticSecondControlAdditivity(unittest.TestCase):
@@ -216,7 +227,8 @@ class SyntheticSecondControlAdditivity(unittest.TestCase):
                                    controls.CONTROLS + (SYNTHETIC,)):
                 extended = tree_report(out)
         self.assertEqual(sorted(extended["controls"]),
-                         ["secret-scanning", "synthetic-control"])
+                         ["secret-scanning", "secret-scanning-push-protection",
+                          "synthetic-control"])
         self.assertEqual(
             canonical_dumps(baseline["controls"]["secret-scanning"]),
             canonical_dumps(extended["controls"]["secret-scanning"]))

@@ -75,9 +75,12 @@ class SliceTreeCompatibility(unittest.TestCase):
             build(after, controls.CONTROLS)
             before_docs = observed_bytes(before)
             after_docs = observed_bytes(after)
-            self.assertNotIn("controls/secret-scanning.json", before_docs)
-            self.assertIn("controls/secret-scanning.json", after_docs)
-            del after_docs["controls/secret-scanning.json"]
+            added = ("controls/secret-scanning.json",
+                     "controls/secret-scanning-push-protection.json")
+            for name in added:
+                self.assertNotIn(name, before_docs)
+                self.assertIn(name, after_docs)
+                del after_docs[name]
             self.assertEqual(before_docs, after_docs)
 
 
