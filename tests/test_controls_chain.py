@@ -1,18 +1,21 @@
 """Chain applicability kind and the derived-entry contract (Slice 3 T2).
 
-The ("chain", <control>) kind ships with the evaluation layer so T5's
+The ("chain", <control>) kind shipped with the evaluation layer so T5's
 push-protection diff is the control definition alone (ADR-0009 additivity;
-the spec's T5 architectural AC) — the chain rules are pinned here through a
-synthetic definition; the shipped table still carries secret-scanning only.
-The contract class proves the entries the evaluator consumes are exactly
-the entries projections.resource_document emits for the shipped descriptor.
+the spec's T5 architectural AC) — the chain rules are pinned generically
+through a synthetic definition, and the ShippedPushProtection class pins
+the real T5 definition through the same unchanged seam (V55/V56, V45/V46
+offline analogs). The contract class proves the entries the evaluator
+consumes are exactly the entries projections.resource_document emits for
+the shipped descriptor.
 """
 import tempfile
 import unittest
 from pathlib import Path
 
 from collector.controls import (
-    SECRET_SCANNING, applicability, operational_state, validate_controls,
+    PUSH_PROTECTION, SECRET_SCANNING, applicability, operational_state,
+    validate_controls,
 )
 from test_controls_operational import entry
 from test_derive_resources import page_record, repo_item, write_tree
@@ -97,6 +100,74 @@ class ChainRules(unittest.TestCase):
             applicability(SECRET_SCANNING, entry(scanning="disabled"),
                           {"secret-scanning": "applicable"}),
             ("applicable", "public-repository-visibility"))
+
+
+class ShippedPushProtection(unittest.TestCase):
+    """The real T5 definition through the unchanged evaluation seam.
+
+    Reason literals are pinned verbatim from the accepted specification,
+    never derived in the test. First-run greens here are expected and are
+    the point: the generic chain machinery already realizes the behavior
+    (ticket #71's architectural AC)."""
+
+    def test_v56_own_enabled_status_self_evidences(self):
+        # Rule 1 precedes the chain even where visibility is undetermined
+        # and the chain is unresolved (the deliberately asymmetric rule).
+        probe = pp_entry(push="enabled", visibility="unknown")
+        self.assertEqual(applicability(PUSH_PROTECTION, probe),
+                         ("applicable", "affirmative-enabled-status"))
+
+    def test_v46_analog_chain_keys_on_availability_never_enablement(self):
+        # PP affirmatively disabled while secret-scanning is applicable:
+        # the pair stays distinguishable — applicable via the chain, yet
+        # operationally disabled.
+        probe = pp_entry(push="disabled")
+        self.assertEqual(
+            applicability(PUSH_PROTECTION, probe,
+                          {"secret-scanning": "applicable"}),
+            ("applicable", "secret-scanning-available"))
+        self.assertEqual(operational_state(PUSH_PROTECTION, probe),
+                         ("disabled", "affirmative-status-disabled"))
+
+    def test_v55_unestablished_chain_degrades(self):
+        for resolved in (None, {},
+                         {"secret-scanning": "applicability-unknown"}):
+            with self.subTest(resolved=resolved):
+                self.assertEqual(
+                    applicability(PUSH_PROTECTION, pp_entry(push="disabled"),
+                                  resolved),
+                    ("applicability-unknown",
+                     "secret-scanning-availability-unknown"))
+
+    def test_v55_operational_state_stays_on_its_own_field(self):
+        # Planes independent: the operational conclusion derives from the
+        # push-protection status even where applicability is unknown.
+        self.assertEqual(
+            operational_state(PUSH_PROTECTION, pp_entry(push="disabled")),
+            ("disabled", "affirmative-status-disabled"))
+
+    def test_v45_analog_enabled_concludes_on_both_planes(self):
+        probe = pp_entry(push="enabled")
+        self.assertEqual(operational_state(PUSH_PROTECTION, probe),
+                         ("enabled", "affirmative-status-enabled"))
+        self.assertEqual(applicability(PUSH_PROTECTION, probe, {}),
+                         ("applicable", "affirmative-enabled-status"))
+
+    def test_degraded_evidence_rules_apply_to_the_real_definition(self):
+        # The shared first-match rules verbatim: unrecognized status never
+        # coerced; inaccessible and unusable evidence degrade honestly.
+        self.assertEqual(operational_state(PUSH_PROTECTION, pp_entry(push=5)),
+                         ("unknown", "status-undetermined"))
+        self.assertEqual(
+            operational_state(PUSH_PROTECTION,
+                              pp_entry(state="inaccessible",
+                                       reason="authorization-denied")),
+            ("inaccessible", "evidence-inaccessible"))
+        self.assertEqual(
+            operational_state(PUSH_PROTECTION,
+                              pp_entry(state="unknown",
+                                       reason="raw-evidence-absent")),
+            ("unknown", "evidence-unavailable"))
 
 
 class DerivedEntryContract(unittest.TestCase):
