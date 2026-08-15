@@ -21,7 +21,19 @@ SECRET_SCANNING = {
     "applicability": "visibility",
 }
 
-CONTROLS = (SECRET_SCANNING,)
+# T5's additivity proof (ticket #71): the second control is its definition
+# alone — same shared evidence surface, no new request. The chain keys on
+# secret-scanning availability, never enablement; secret-scanning must
+# precede it in the table (single deterministic evaluation pass).
+PUSH_PROTECTION = {
+    "name": "secret-scanning-push-protection",
+    "descriptor": "security-and-analysis",
+    "status_path": (
+        "security_and_analysis", "secret_scanning_push_protection", "status"),
+    "applicability": ("chain", "secret-scanning"),
+}
+
+CONTROLS = (SECRET_SCANNING, PUSH_PROTECTION)
 
 
 def _valid_applicability(kind):

@@ -100,12 +100,16 @@ class DocumentShape(unittest.TestCase):
             self.build(out)
             derive_observed(out, run_id=RUN)
             controls_dir = out / "observed" / "controls"
+            names = ["secret-scanning-push-protection.json",
+                     "secret-scanning.json"]
             self.assertEqual([p.name for p in sorted(controls_dir.iterdir())],
-                             ["secret-scanning.json"])
-            first = (controls_dir / "secret-scanning.json").read_bytes()
+                             names)
+            first = {name: (controls_dir / name).read_bytes()
+                     for name in names}
             derive_observed(out, run_id=RUN)
-            self.assertEqual(
-                (controls_dir / "secret-scanning.json").read_bytes(), first)
+            for name in names:
+                self.assertEqual((controls_dir / name).read_bytes(),
+                                 first[name], name)
 
 
 class RollupAndDegradation(unittest.TestCase):
