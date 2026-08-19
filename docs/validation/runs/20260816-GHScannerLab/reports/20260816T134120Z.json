@@ -1,0 +1,151 @@
+{
+  "api_url": "https://api.github.com",
+  "controls": {
+    "secret-scanning": {
+      "applicability_counts": {
+        "applicable": 5
+      },
+      "applicability_reason_counts": {
+        "affirmative-enabled-status": 2,
+        "public-repository-visibility": 3
+      },
+      "operational_state_counts": {
+        "disabled": 3,
+        "enabled": 2
+      },
+      "operational_state_reason_counts": {
+        "affirmative-status-disabled": 3,
+        "affirmative-status-enabled": 2
+      }
+    },
+    "secret-scanning-push-protection": {
+      "applicability_counts": {
+        "applicable": 5
+      },
+      "applicability_reason_counts": {
+        "affirmative-enabled-status": 1,
+        "secret-scanning-available": 4
+      },
+      "operational_state_counts": {
+        "disabled": 4,
+        "enabled": 1
+      },
+      "operational_state_reason_counts": {
+        "affirmative-status-disabled": 4,
+        "affirmative-status-enabled": 1
+      }
+    }
+  },
+  "execution": {
+    "captured": {
+      "first": "2026-08-16T13:41:20Z",
+      "last": "2026-08-16T13:41:26Z"
+    },
+    "requests": {
+      "attempts": 19,
+      "completed": 19,
+      "evidence_absent": 0,
+      "failed": 0,
+      "missing_input": 0,
+      "planned_drains": 6,
+      "planned_singles": 13,
+      "retained_records": 19
+    },
+    "terminations": {},
+    "waits": {
+      "max_single_wait_seconds": 0,
+      "primary-park": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "refused": 0,
+      "retry": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "retry-after": {
+        "count": 0,
+        "requested_seconds": 0,
+        "slept_seconds": 0
+      },
+      "total_wait_seconds": 0
+    }
+  },
+  "failures": [],
+  "identity_login": "a24577t",
+  "listings": {
+    "repositories": {
+      "complete": true,
+      "items": 5,
+      "pages": 1
+    }
+  },
+  "org": "GHScannerLab",
+  "rate_limit": {
+    "occurrences": 0,
+    "total_seconds": 0
+  },
+  "resource_states": {
+    "meta": "collected",
+    "org": "collected",
+    "repositories": "collected",
+    "user": "collected"
+  },
+  "resources": {
+    "default-branch-protection": {
+      "reason_counts": {
+        "absence-message-matched": 3,
+        "absence-rule-unmatched-404": 1,
+        "collected": 1
+      },
+      "state": "absent",
+      "state_counts": {
+        "absent": 3,
+        "collected": 1,
+        "inaccessible": 1
+      },
+      "waits": {
+        "count": 0,
+        "total_seconds": 0
+      }
+    },
+    "repository-rulesets": {
+      "reason_counts": {
+        "collected": 5
+      },
+      "state": "collected",
+      "state_counts": {
+        "collected": 5
+      },
+      "waits": {
+        "count": 0,
+        "total_seconds": 0
+      }
+    },
+    "security-and-analysis": {
+      "reason_counts": {
+        "collected": 5
+      },
+      "state": "collected",
+      "state_counts": {
+        "collected": 5
+      },
+      "waits": {
+        "count": 0,
+        "total_seconds": 0
+      }
+    }
+  },
+  "run_id": "20260816T134120Z",
+  "state_counts": {
+    "absent": 0,
+    "collected": 4,
+    "failed": 0,
+    "inaccessible": 0,
+    "incomplete": 0,
+    "unknown": 0,
+    "unsupported": 0
+  }
+}

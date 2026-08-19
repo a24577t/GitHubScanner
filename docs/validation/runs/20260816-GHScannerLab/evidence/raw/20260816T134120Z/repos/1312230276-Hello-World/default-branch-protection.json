@@ -1,0 +1,27 @@
+{
+  "body_text": "{\"message\":\"Branch not protected\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#get-branch-protection\",\"status\":\"404\"}",
+  "envelope": {
+    "attempts": 1,
+    "branch": "master",
+    "captured_at": "2026-08-16T13:41:24Z",
+    "method": "GET",
+    "repo": {
+      "full_name": "GHScannerLab/Hello-World",
+      "id": 1312230276
+    },
+    "resource": "default-branch-protection",
+    "response_headers": {
+      "x-github-api-version-selected": "2022-11-28",
+      "x-github-media-type": "github.v3; format=json",
+      "x-ratelimit-limit": "5000",
+      "x-ratelimit-remaining": "4979",
+      "x-ratelimit-reset": "1786890028",
+      "x-ratelimit-used": "21"
+    },
+    "run_id": "20260816T134120Z",
+    "status": 404,
+    "url": "https://api.github.com/repos/GHScannerLab/Hello-World/branches/master/protection",
+    "wait_records": [],
+    "waits_seconds": []
+  }
+}

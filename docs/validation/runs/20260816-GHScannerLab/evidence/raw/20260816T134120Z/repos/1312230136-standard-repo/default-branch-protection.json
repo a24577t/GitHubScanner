@@ -1,0 +1,27 @@
+{
+  "body_text": "{\"url\":\"https://api.github.com/repos/GHScannerLab/standard-repo/branches/main/protection\",\"required_pull_request_reviews\":{\"url\":\"https://api.github.com/repos/GHScannerLab/standard-repo/branches/main/protection/required_pull_request_reviews\",\"dismiss_stale_reviews\":false,\"require_code_owner_reviews\":false,\"require_last_push_approval\":false,\"required_approving_review_count\":1},\"required_signatures\":{\"url\":\"https://api.github.com/repos/GHScannerLab/standard-repo/branches/main/protection/required_signatures\",\"enabled\":false},\"enforce_admins\":{\"url\":\"https://api.github.com/repos/GHScannerLab/standard-repo/branches/main/protection/enforce_admins\",\"enabled\":false},\"required_linear_history\":{\"enabled\":false},\"allow_force_pushes\":{\"enabled\":false},\"allow_deletions\":{\"enabled\":false},\"block_creations\":{\"enabled\":false},\"required_conversation_resolution\":{\"enabled\":false},\"lock_branch\":{\"enabled\":false},\"allow_fork_syncing\":{\"enabled\":false}}",
+  "envelope": {
+    "attempts": 1,
+    "branch": "main",
+    "captured_at": "2026-08-16T13:41:22Z",
+    "method": "GET",
+    "repo": {
+      "full_name": "GHScannerLab/standard-repo",
+      "id": 1312230136
+    },
+    "resource": "default-branch-protection",
+    "response_headers": {
+      "x-github-api-version-selected": "2022-11-28",
+      "x-github-media-type": "github.v3; format=json",
+      "x-ratelimit-limit": "5000",
+      "x-ratelimit-remaining": "4985",
+      "x-ratelimit-reset": "1786890028",
+      "x-ratelimit-used": "15"
+    },
+    "run_id": "20260816T134120Z",
+    "status": 200,
+    "url": "https://api.github.com/repos/GHScannerLab/standard-repo/branches/main/protection",
+    "wait_records": [],
+    "waits_seconds": []
+  }
+}

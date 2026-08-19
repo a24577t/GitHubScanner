@@ -1,0 +1,86 @@
+{
+  "coverage": {
+    "basis": "eligible-discovered-repositories",
+    "eligible_target_count": 5,
+    "inventory_state": "collected"
+  },
+  "repositories": [
+    {
+      "full_name": "GHScannerLab/standard-repo",
+      "id": 1312230136,
+      "reason": "collected",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "enabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "enabled"
+        }
+      },
+      "state": "collected",
+      "visibility": "public"
+    },
+    {
+      "full_name": "GHScannerLab/archived-repo",
+      "id": 1312230165,
+      "reason": "collected",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "disabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "disabled"
+        }
+      },
+      "state": "collected",
+      "visibility": "public"
+    },
+    {
+      "full_name": "GHScannerLab/Hello-World",
+      "id": 1312230276,
+      "reason": "collected",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "disabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "disabled"
+        }
+      },
+      "state": "collected",
+      "visibility": "public"
+    },
+    {
+      "full_name": "GHScannerLab/unprotected-repo",
+      "id": 1317453329,
+      "reason": "collected",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "enabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "disabled"
+        }
+      },
+      "state": "collected",
+      "visibility": "public"
+    },
+    {
+      "full_name": "GHScannerLab/empty-repo",
+      "id": 1317454920,
+      "reason": "collected",
+      "security_and_analysis": {
+        "secret_scanning": {
+          "status": "disabled"
+        },
+        "secret_scanning_push_protection": {
+          "status": "disabled"
+        }
+      },
+      "state": "collected",
+      "visibility": "public"
+    }
+  ],
+  "run_id": "20260816T134120Z",
+  "state": "collected"
+}
