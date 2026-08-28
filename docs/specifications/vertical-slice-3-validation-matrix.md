@@ -50,3 +50,13 @@ enablement obligations are mandatory; if either operation proves impossible
 at provisioning, that is a blocking architectural finding (applicability
 rule 2 loses its platform fact) routed to the owner for decision — it must
 not degrade into a recorded gap.
+
+**Editorial clarification (Slice 3 consolidation, 2026-08-28; append-only):**
+V52's Expected column states the applicability outcome for the
+visibility-kind control (`applicability-unknown` · `evidence-unavailable`,
+secret-scanning rule 5). For the chained control the specification's chain
+rule 3 governs the same evidence class:
+`applicability-unknown` · `secret-scanning-availability-unknown`. The row's
+state-level claim — both planes degrade, no fabrication — holds for both
+controls; only the deterministic reason literal differs, and both outcomes
+are pinned in the offline suite.
