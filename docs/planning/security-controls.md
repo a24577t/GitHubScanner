@@ -9,18 +9,26 @@ phase.
 
 ## Current capability
 
-The scanner observes repository inventory, default-branch protection, and
-repository rulesets with deterministic evidence and reporting (Slices 1–2:
-three evidence layers, byte-identical offline derivation, seven-state
-taxonomy, bounded waits; 218-test suite; validation run `20260730T162522Z`).
+The scanner observes repository inventory, default-branch protection,
+repository rulesets, and the shared `security-and-analysis` surface with
+deterministic evidence and reporting (Slices 1–3: three evidence layers,
+byte-identical offline derivation, seven-state taxonomy, bounded waits;
+347-test suite; validation runs `20260730T162522Z` and `20260816T134120Z`).
+The first two Security Controls — Secret Scanning and Secret Scanning Push
+Protection — are implemented under the canonical ADR-0009 realization:
+control definitions, control-observation documents, per-control report
+aggregates, and live-validated Observation, Applicability (including the
+first applicability chain), and Operational State planes.
 
 ## Current limitation
 
-The scanner does not yet provide authoritative security-control posture
-assessment. Secret scanning, secret scanning push protection, Dependabot
-vulnerability alerts, Dependabot security updates, and code scanning are not
-observed; no Operational State, Applicability, Policy Expectation, or
-Conformance conclusion exists for any Security Control.
+Policy Expectation and Conformance conclusions exist for no Security
+Control (the policy-definition decision is their prerequisite). Code
+scanning, the Dependabot controls, dependency graph, security policy, and
+organization security configuration are not yet observed. The ADR-0009
+additivity proof covers the same-evidence-surface case only; the
+cross-evidence-shape proof is assigned to the next implemented roadmap
+control's slice.
 
 ## Target capability
 
@@ -42,8 +50,8 @@ operational state (ADR-0008).
 
 | Security Control | Planned | Slice | Status |
 |---|---|---|---|
-| Secret Scanning | ✓ | 3 | Specification accepted |
-| Secret Scanning Push Protection | ✓ | 3 | Specification accepted |
+| Secret Scanning | ✓ | 3 | Implemented (Slice 3 complete) |
+| Secret Scanning Push Protection | ✓ | 3 | Implemented (Slice 3 complete) |
 | Code Scanning | ✓ | TBD | Planned |
 | Dependabot Vulnerability Alerts | ✓ | TBD | Planned |
 | Dependabot Security Updates | ✓ | TBD | Planned |
@@ -197,23 +205,27 @@ rules, and live pinning follows validation-run authority.
 ## Sequencing guidance
 
 Future planning selects one or more controls as a bounded slice at its
-decision phase. On current facts: **near-term candidates** — Secret Scanning,
-Push Protection, Dependency Graph, Dependabot Vulnerability Alerts, Dependabot
-Security Updates, Security Policy (single-source evidence, largely observable
-surfaces, no blocking architecture decisions beyond #2/#3 facts and
-permissions). **Later candidates** — Code Scanning (combination semantics
+decision phase. On current facts: **near-term candidates** — Dependency Graph, Dependabot
+Vulnerability Alerts, Dependabot Security Updates, Security Policy
+(single-source evidence, largely observable surfaces, no blocking
+architecture decisions beyond #2/#3 facts and permissions); Secret Scanning
+and Push Protection are implemented (Slice 3 complete) and no longer
+candidates. **Later candidates** — Code Scanning (combination semantics
 first), Security Configuration (#26 first). Conformance planes for any control
 follow the policy-definition decision. This document schedules nothing.
 
-Current status: the Secret Scanning control family is assigned to **Slice 3**
-— Architecture Grill verdict PASS WITH CONDITIONS approved at ⟦G-Verdict⟧
-(Decision S4-SLICE3-01, 2026-07-30); accepted specification:
+Current status: the Secret Scanning control family — **Slice 3 — is
+complete** (T1–T7, tickets #67–#73, each through the independent Quality
+Gate and ⟦G-Merge⟧; consolidation record:
+[slice-3-architecture-consolidation.md](../consolidation/slice-3-architecture-consolidation.md)).
+Accepted specification:
 [vertical-slice-3-secret-scanning-control-family.md](../specifications/vertical-slice-3-secret-scanning-control-family.md)
-(canonical realization pattern: ADR-0009). The accepted Slice 3 subset
-excludes `unavailable` pending an affirmative discriminator (#2/#3) — the
-"expected subset" leads in the two secret-scanning sections above remain
-planning leads that the accepted specification supersedes for Slice 3. The
-cross-evidence-shape additivity proof of the control pattern is assigned to
-the next implemented roadmap control's slice. Grill input materials:
+(canonical realization pattern: ADR-0009, proven in implementation). The
+accepted Slice 3 subset excludes `unavailable` pending an affirmative
+discriminator (#2/#3) — the "expected subset" leads in the two
+secret-scanning sections above remain planning leads that the accepted
+specification supersedes. The cross-evidence-shape additivity proof of the
+control pattern remains assigned to the next implemented roadmap control's
+slice. Grill input materials:
 [slice-3-architecture-grill.md](slice-3-architecture-grill.md). All other
 rows stay `TBD`/`Planned`; every control remains an independent seam.

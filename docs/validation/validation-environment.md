@@ -33,6 +33,7 @@ Repositories are added lazily: only when an approved vertical slice's specificat
 ## Validation runs
 
 - One manual `collect` + `derive` run per release that changes collection or derivation behavior.
+- **Operational note (Windows, recorded at the Slice 3 consolidation):** the committed run trees carry long repo-relative paths; on Windows without OS long-path support, checkouts whose root path exceeds roughly 110 characters cannot run the full suite over these trees (MAX_PATH). Keep working-copy and temporary-worktree roots short.
 - Each run's complete output tree (raw evidence, observed state, reports) is committed as a **self-contained** directory under `docs/validation/runs/<date>-<org>/`. Self-containment matters: `derive` selects the latest run within a tree, so runs are never mixed in one tree.
 - The evidence is the collector's own output — no separate record format, no expected-vs-actual tooling, no comparator. A human reads the committed report against this document's inventory table.
 - Committed evidence is token-free by construction (token-secrecy acceptance criterion AC6; response-header allowlist) and is verified by scan before commit.
